@@ -45,7 +45,7 @@ function getCenter() {
 
 export default class Login extends React.Component {
     onFinish = (values) => {
-        console.log('Received values of form: ', values);
+        // console.log('Received values of form: ', values);
     };
 
     render() {
@@ -65,7 +65,7 @@ export default class Login extends React.Component {
                             rules={[
                                 {
                                     required: true,
-                                    message: 'Please input your Username!',
+                                    message: 'Please input your username!',
                                 },
                             ]}
                         >
@@ -77,7 +77,7 @@ export default class Login extends React.Component {
                             rules={[
                                 {
                                     required: true,
-                                    message: 'Please input your Password!',
+                                    message: 'Please input your password!',
                                 },
                             ]}
                         >
