@@ -3,10 +3,10 @@
 const {createProxyMiddleware} = require('http-proxy-middleware');
 module.exports = function (app) {
     app.use(
-        createProxyMiddleware('/', {
+        createProxyMiddleware('/b', {
             target: 'http://192.168.31.217:8082',
-            changeOrigin: true
-            /*pathRewrite: {'^/api1': ''}*/ // 将前端路径中的/api1替换为后者，然后向后端请求
+            changeOrigin: true,
+            pathRewrite: {'^/b': ''} // 将前端路径中的/api1替换为后者，然后向后端请求
         })
         // ,createProxyMiddleware('/api2', {
         //     target: 'http://localhost:8889',

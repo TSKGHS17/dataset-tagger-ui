@@ -4,14 +4,16 @@ import {BrowserRouter, Route, Routes} from "react-router-dom";
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import App from "./App"
-import Login from "./pages/Login";
+import LoginPage from "./component/LoginPage";
 import PageNotFound from "./pages/PageNotFound";
+import RegisterPage from "./component/RegisterPage";
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
     <BrowserRouter>
         <Routes>
-            <Route path="/login" element={<Login/>} />
+            <Route path="/login" element={<LoginPage/>} />
+            <Route path="/register" element={<RegisterPage/>} />
             <Route path="/home" element={<App/>} />
             <Route path="*" element={<PageNotFound/>} />
         </Routes>
