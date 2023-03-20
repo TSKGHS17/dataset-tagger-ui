@@ -1,27 +1,21 @@
 import React from "react";
-import {Button, Form, Input, Layout, Select, Space} from "antd";
+import {Button, Form, Input, Layout, Space} from "antd";
 import Styles from "../utils/Styles";
+import axios from "axios";
+import Constants from "../utils/Constants";
 
 const {Header, Footer, Content} = Layout;
-const {Option} = Select;
-
-const prefixSelector = (
-    <Form.Item name="prefix" noStyle>
-        <Select
-            style={{
-                width: 70,
-            }}
-        >
-            <Option value="86">+86</Option>
-            <Option value="87">+87</Option>
-        </Select>
-    </Form.Item>
-);
 
 export default class RegisterPage extends React.Component {
     constructor(props) {
         super(props);
         this.formRef = React.createRef();
+    }
+
+    onFinish = (values) => {
+        if (values.username === undefined || values.password === undefined || values.username === "" || values.password === "") {
+            return;
+        }
     }
 
     resetForm = () => {
@@ -33,7 +27,10 @@ export default class RegisterPage extends React.Component {
             <Layout style={Styles.layoutStyle}>
                 <Header style={Styles.headerStyle}>Header</Header>
                 <Content style={Styles.contentStyle}>
-                    <Form ref={this.formRef}>
+                    <Form
+                        ref={this.formRef}
+                        onFinish={this.onFinish}
+                    >
                         <Form.Item
                             name="username"
                             label="用户名"
@@ -123,14 +120,17 @@ export default class RegisterPage extends React.Component {
                                     required: true,
                                     message: '请输入电话号码！',
                                 },
+                                () => ({
+                                    validator(_, value) {
+                                        if (!value || (value.length === 11 && /^\d+$/.test(value))) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error('输入的电话号码不合法！'));
+                                    },
+                                }),
                             ]}
                         >
-                            <Input
-                                addonBefore={prefixSelector}
-                                style={{
-                                    width: '100%',
-                                }}
-                            />
+                            <Input/>
                         </Form.Item>
 
                         <Form.Item>

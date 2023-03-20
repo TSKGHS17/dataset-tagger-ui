@@ -1,43 +1,44 @@
 import React from 'react';
 import {LockOutlined, UserOutlined} from '@ant-design/icons';
-import {Layout, Button, Checkbox, Form, Input, Space, Modal} from 'antd';
+import {Layout, Button, Checkbox, Form, Input, Space, Modal, Radio} from 'antd';
 import axios from 'axios';
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
+import {WithRouter} from "../router/WithRouter";
 
 const {Header, Footer, Content} = Layout;
 
-export default class LoginPage extends React.Component {
+class LoginPage extends React.Component {
     constructor(props) {
         super(props);
         this.formRef = React.createRef();
-        this.state={
+        this.state = {
             showErrorMsg: false,
             errorMsg: "",
         }
     }
-    onFinish = (values) => {
-        // console.log('Received values of form: ', values);
-    };
 
-    handleLogin = () => {
-        let values = this.formRef.current.getFieldsValue();
+    onFinish = (values) => {
         if (values.username === undefined || values.password === undefined || values.username === "" || values.password === "") {
             return;
         }
 
-        axios.post(Constants.frontEndBaseUrl + '/b/api/publisher/login', values, Constants.formHeader).then((res) => {
+        let frontEndLoginUrl = '/b/api/' + values.role + '/login';
+        axios.post(Constants.frontEndBaseUrl + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
             const {data} = res;
             console.log(res);
             if (data.code === 200) {
                 //TODO
-            }
-            else {
+            } else {
                 this.setState({showErrorMsg: true, errorMsg: data.error_msg});
             }
         }).catch((err) => {
             this.setState({showErrorMsg: true, errorMsg: err.message});
         })
+    };
+
+    handleRegister = () => {
+        this.props.navigate('/register');
     }
 
     resetForm = () => {
@@ -54,10 +55,9 @@ export default class LoginPage extends React.Component {
                 <Header style={Styles.headerStyle}>Header</Header>
                 <Content style={Styles.contentStyle}>
                     <Form
-                        name="normal_login"
                         ref={this.formRef}
                         initialValues={{
-                            remember: true,
+                            role: "publisher",
                         }}
                         onFinish={this.onFinish}
                     >
@@ -89,18 +89,28 @@ export default class LoginPage extends React.Component {
                             />
                         </Form.Item>
 
-                        <Form.Item name="remember" valuePropName="checked" noStyle>
-                            <Form.Item >
-                                <Checkbox>记住我</Checkbox>
-                            </Form.Item>
+                        <Form.Item
+                            name="role"
+                            label="您的身份："
+                            rules={[
+                                {
+                                    required: true,
+                                    message: '请选择身份！'
+                                },
+                            ]}
+                        >
+                            <Radio.Group>
+                                <Radio value={"publisher"}>Publisher</Radio>
+                                <Radio value={"tagger"}>Tagger</Radio>
+                            </Radio.Group>
                         </Form.Item>
 
                         <Form.Item>
                             <Space size={10}>
-                                <Button type="primary" htmlType="submit" onClick={this.handleLogin}>
+                                <Button type="primary" htmlType="submit">
                                     登录
                                 </Button>
-                                <Button htmlType="submit">
+                                <Button onClick={this.handleRegister}>
                                     注册
                                 </Button>
                                 <Button onClick={this.resetForm}>
@@ -124,3 +134,4 @@ export default class LoginPage extends React.Component {
     }
 }
 
+export default WithRouter(LoginPage);
