@@ -85,8 +85,8 @@ export default class Canvas extends React.Component {
                 <canvas
                     id={"canvas"}
                     ref={this.canvasRef}
-                    width={600}
-                    height={600}
+                    width={360}
+                    height={640}
                     style={{"cursor": "pointer"}}
                 />
                 <Modal
