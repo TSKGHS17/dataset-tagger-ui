@@ -1,6 +1,6 @@
 import React from 'react';
 import {LockOutlined, UserOutlined} from '@ant-design/icons';
-import {Layout, Button, Checkbox, Form, Input, Space, Modal, Radio} from 'antd';
+import {Layout, Button, Form, Input, Space, Modal, message} from 'antd';
 import axios from 'axios';
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
@@ -23,14 +23,15 @@ class LoginPage extends React.Component {
             return;
         }
 
-        let frontEndLoginUrl = '/b/api/' + values.role + '/login';
+        let frontEndLoginUrl = '/b/api/user/login';
         axios.post(Constants.frontEndBaseUrl + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
             const {data} = res;
-            console.log(res);
             if (data.code === 200) {
-                //TODO
+                message.success('登录成功');
+                this.props.navigate('/');
             } else {
-                this.setState({showErrorMsg: true, errorMsg: data.error_msg});
+                this.setState({showErrorMsg: true, errorMsg: data['error_msg']});
+                // TODO
             }
         }).catch((err) => {
             this.setState({showErrorMsg: true, errorMsg: err.message});
@@ -70,7 +71,10 @@ class LoginPage extends React.Component {
                                 },
                             ]}
                         >
-                            <Input prefix={<UserOutlined/>} placeholder="用户名"/>
+                            <Input
+                                prefix={<UserOutlined/>}
+                                placeholder="用户名"
+                            />
                         </Form.Item>
 
                         <Form.Item
@@ -87,22 +91,6 @@ class LoginPage extends React.Component {
                                 type="password"
                                 placeholder="密码"
                             />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="role"
-                            label="您的身份："
-                            rules={[
-                                {
-                                    required: true,
-                                    message: '请选择身份！'
-                                },
-                            ]}
-                        >
-                            <Radio.Group>
-                                <Radio value={"publisher"}>Publisher</Radio>
-                                <Radio value={"tagger"}>Tagger</Radio>
-                            </Radio.Group>
                         </Form.Item>
 
                         <Form.Item>
@@ -123,7 +111,7 @@ class LoginPage extends React.Component {
                         open={this.state.showErrorMsg}
                         title={"登录失败"}
                         onCancel={this.closeErrorMsg}
-                        footer={<Button onClick={this.closeErrorMsg}>好的</Button>}
+                        footer={<Button type="primary" onClick={this.closeErrorMsg}>好的</Button>}
                     >
                         {this.state.errorMsg}
                     </Modal>

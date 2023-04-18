@@ -1,0 +1,28 @@
+.header {
+    padding: 0;
+    background-color: #7dbcea;
+    position: relative;
+}
+
+.trigger {
+    padding: 0 24px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.trigger:hover {
+    color: #1890ff;
+}
+
+.avatar {
+    cursor: pointer;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
+.popover {
+    text-align: center;
+    font-size: 18px;
+}

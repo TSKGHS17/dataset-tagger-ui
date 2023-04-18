@@ -1,25 +1,48 @@
 import React from "react";
-import {Button, Form, Input, Layout, Space} from "antd";
+import {Button, Form, Input, Layout, message, Modal, Space} from "antd";
 import Styles from "../utils/Styles";
-import axios from "axios";
 import Constants from "../utils/Constants";
+import {WithRouter} from "../router/WithRouter";
+import axios from "axios";
 
 const {Header, Footer, Content} = Layout;
 
-export default class RegisterPage extends React.Component {
+class RegisterPage extends React.Component {
     constructor(props) {
         super(props);
         this.formRef = React.createRef();
+        this.state = {
+            showErrorMsg: false,
+            errorMsg: "",
+        }
     }
 
-    onFinish = (values) => {
+    onRegister = (values) => {
         if (values.username === undefined || values.password === undefined || values.username === "" || values.password === "") {
             return;
         }
+
+        let frontEndRegisterUrl = '/b/api/user/register';
+        axios.post(Constants.frontEndBaseUrl + frontEndRegisterUrl, values, Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                message.success('注册成功');
+                this.props.navigate('/login');
+            } else {
+                this.setState({showErrorMsg: true, errorMsg: data.error_msg});
+                // TODO
+            }
+        }).catch((err) => {
+            this.setState({showErrorMsg: true, errorMsg: err.message});
+        });
     }
 
     resetForm = () => {
         this.formRef.current.resetFields();
+    }
+
+    closeErrorMsg = () => {
+        this.setState({showErrorMsg: false});
     }
 
     render() {
@@ -29,7 +52,7 @@ export default class RegisterPage extends React.Component {
                 <Content style={Styles.contentStyle}>
                     <Form
                         ref={this.formRef}
-                        onFinish={this.onFinish}
+                        onFinish={this.onRegister}
                     >
                         <Form.Item
                             name="username"
@@ -82,30 +105,13 @@ export default class RegisterPage extends React.Component {
                         </Form.Item>
 
                         <Form.Item
-                            name="nickname"
-                            label="昵称"
-                            rules={[
-                                {
-                                    required: true,
-                                    message: '请输入昵称！',
-                                    whitespace: true,
-                                },
-                            ]}
-                        >
-                            <Input/>
-                        </Form.Item>
-
-                        <Form.Item
                             name="email"
                             label="邮箱"
                             rules={[
                                 {
+                                    required: false,
                                     type: 'email',
                                     message: '输入的邮箱地址不合法！',
-                                },
-                                {
-                                    required: true,
-                                    message: '请输入邮箱地址！',
                                 },
                             ]}
                         >
@@ -117,8 +123,7 @@ export default class RegisterPage extends React.Component {
                             label="电话号码"
                             rules={[
                                 {
-                                    required: true,
-                                    message: '请输入电话号码！',
+                                    required: false,
                                 },
                                 () => ({
                                     validator(_, value) {
@@ -144,9 +149,19 @@ export default class RegisterPage extends React.Component {
                             </Space>
                         </Form.Item>
                     </Form>
+                    <Modal
+                        open={this.state.showErrorMsg}
+                        title={"注册失败"}
+                        onCancel={this.closeErrorMsg}
+                        footer={<Button type="primary" onClick={this.closeErrorMsg}>好的</Button>}
+                    >
+                        {this.state.errorMsg}
+                    </Modal>
                 </Content>
                 <Footer style={Styles.footerStyle}>Footer</Footer>
             </Layout>
         );
     }
 }
+
+export default WithRouter(RegisterPage);

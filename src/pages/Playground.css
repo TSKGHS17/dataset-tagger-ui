@@ -1,0 +1,38 @@
+.listItem {
+    position: relative;
+}
+
+.listItemAvatar {
+    position: absolute;
+    top: 1px;
+    left: 5px;
+    background-color: #fff;
+}
+
+.listItemTitle {
+    position: absolute;
+    cursor: pointer;
+    top: 0px;
+    left: 60px;
+}
+
+.listItemTitleTooltip {
+    cursor: pointer;
+}
+
+.listItemDesc {
+    position: absolute;
+    top: 20px;
+    left: 60px;
+}
+
+.progress {
+    position: absolute;
+    left: 550px;
+}
+
+.editButton {
+    position: absolute;
+    right: 20px;
+}
+
