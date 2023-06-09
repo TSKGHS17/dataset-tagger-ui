@@ -1,5 +1,5 @@
 import React from "react";
-import {Button, Form, Input, Layout, message, Modal, Space} from "antd";
+import {Button, Form, Input, Layout, message, Modal, Space, Spin} from "antd";
 import Styles from "../utils/Styles";
 import Constants from "../utils/Constants";
 import {WithRouter} from "../router/WithRouter";
@@ -12,13 +12,16 @@ class RegisterPage extends React.Component {
         super(props);
         this.formRef = React.createRef();
         this.state = {
+            isRegistering: false,
             showErrorMsg: false,
             errorMsg: "",
         }
     }
 
     onRegister = (values) => {
+        this.setState({isRegistering: true});
         if (values.username === undefined || values.password === undefined || values.username === "" || values.password === "") {
+            this.setState({isRegistering: false});
             return;
         }
 
@@ -26,14 +29,14 @@ class RegisterPage extends React.Component {
         axios.post(Constants.frontEndBaseUrl + frontEndRegisterUrl, values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                this.setState({isRegistering: false});
                 message.success('注册成功');
                 this.props.navigate('/login');
             } else {
-                this.setState({showErrorMsg: true, errorMsg: data.error_msg});
-                // TODO
+                this.setState({isRegistering: false, showErrorMsg: true, errorMsg: data['error_msg']});
             }
         }).catch((err) => {
-            this.setState({showErrorMsg: true, errorMsg: err.message});
+            this.setState({isRegistering: false, showErrorMsg: true, errorMsg: err.message});
         });
     }
 
@@ -50,6 +53,7 @@ class RegisterPage extends React.Component {
             <Layout style={Styles.layoutStyle}>
                 <Header style={Styles.headerStyle}>Header</Header>
                 <Content style={Styles.contentStyle}>
+                    <Spin spinning={this.state.isRegistering}>
                     <Form
                         ref={this.formRef}
                         onFinish={this.onRegister}
@@ -149,6 +153,7 @@ class RegisterPage extends React.Component {
                             </Space>
                         </Form.Item>
                     </Form>
+                    </Spin>
                     <Modal
                         open={this.state.showErrorMsg}
                         title={"注册失败"}

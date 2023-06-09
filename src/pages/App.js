@@ -12,16 +12,17 @@ import Styles from "../utils/Styles";
 import Functions from "../utils/Functions";
 import {WithRouter} from "../router/WithRouter";
 import {Outlet} from "react-router-dom";
-import './App.css';
 import axios from "axios";
 import Constants from "../utils/Constants";
+import './App.css';
 
 const {Header, Footer, Sider, Content} = Layout;
+const functions = new Functions();
 
 const items = [
-    Functions.getItem('主页', '', <HomeTwoTone/>),
-    Functions.getItem('数据集', 'dataset', <DatabaseTwoTone/>),
-    Functions.getItem('广场', 'playground', <TabletTwoTone/>),
+    functions.getItem('主页', '', <HomeTwoTone/>),
+    functions.getItem('数据集', 'dataset', <DatabaseTwoTone/>),
+    functions.getItem('广场', 'playground', <TabletTwoTone/>),
 ];
 
 class App extends React.Component {
@@ -30,17 +31,22 @@ class App extends React.Component {
         this.state = {
             collapsed: false,
             username: "username",
+            uid: "uid",
         }
     }
 
     componentDidMount() {
         let frontEndInfoUrl = '/b/api/user/info';
-        let username;
         axios.get(Constants.frontEndBaseUrl + frontEndInfoUrl, Constants.formHeader).then((res) => {
-            username = res.data.data.username;
-            this.setState({username: username});
+            if (res.data.code === 200) {
+                this.setState({username: res.data.data['username'], uid: res.data.data['uid']});
+            }
+            else {
+                message.error(res.data['error_msg']);
+                this.props.navigate('/login');
+            }
         }).catch((err) => {
-            message.error('未登录');
+            message.error(err.message);
             this.props.navigate('/login');
         });
     }
@@ -51,7 +57,7 @@ class App extends React.Component {
 
     menuHandleClick = (values) => {
         let {key} = values;
-        this.props.navigate('/' + key);
+        this.props.navigate('/' + key + `?uid=${this.state.uid}`);
     }
 
     logout = () => {
@@ -63,8 +69,12 @@ class App extends React.Component {
                 this.props.navigate('/login');
             }
             else {
-                message.error('注销失败');
+                message.error(data['error_msg']);
+                this.props.navigate('/login');
             }
+        }).catch((err) => {
+            message.error(err.message);
+            this.props.navigate('/login');
         });
     }
 
@@ -92,19 +102,19 @@ class App extends React.Component {
                         />
                     </Sider>
                     <Layout className="site-layout">
-                        <Header className='header'>
+                        <Header style={Styles.appHeader}>
                             {React.createElement(this.state.collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
                                 className: 'trigger',
                                 onClick: this.toggleCollapsed,
                             })}
                             <Popover
                                 title={this.state.username}
-                                overlayClassName="popover"
+                                overlayClassName={'popover'}
                                 content={<Button type="dashed" block onClick={this.logout}>退出登录</Button>}
                             >
                                 <Avatar
                                     icon={<UserOutlined/>}
-                                    className="avatar"
+                                    style={Styles.appAvatar}
                                 />
                             </Popover>
                         </Header>

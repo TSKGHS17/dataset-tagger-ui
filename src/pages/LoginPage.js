@@ -1,6 +1,6 @@
 import React from 'react';
 import {LockOutlined, UserOutlined} from '@ant-design/icons';
-import {Layout, Button, Form, Input, Space, Modal, message} from 'antd';
+import {Layout, Button, Form, Input, Space, Modal, message, Spin} from 'antd';
 import axios from 'axios';
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
@@ -13,13 +13,16 @@ class LoginPage extends React.Component {
         super(props);
         this.formRef = React.createRef();
         this.state = {
+            isLogging: false,
             showErrorMsg: false,
             errorMsg: "",
         }
     }
 
     onFinish = (values) => {
+        this.setState({isLogging: true});
         if (values.username === undefined || values.password === undefined || values.username === "" || values.password === "") {
+            this.setState({isLogging: false});
             return;
         }
 
@@ -27,14 +30,14 @@ class LoginPage extends React.Component {
         axios.post(Constants.frontEndBaseUrl + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                this.setState({isLogging: false});
                 message.success('登录成功');
-                this.props.navigate('/');
+                this.props.navigate(`/`);
             } else {
-                this.setState({showErrorMsg: true, errorMsg: data['error_msg']});
-                // TODO
+                this.setState({isLogging: false, showErrorMsg: true, errorMsg: data['error_msg']});
             }
         }).catch((err) => {
-            this.setState({showErrorMsg: true, errorMsg: err.message});
+            this.setState({isLogging: false, showErrorMsg: true, errorMsg: err.message});
         })
     };
 
@@ -55,6 +58,7 @@ class LoginPage extends React.Component {
             <Layout style={Styles.layoutStyle}>
                 <Header style={Styles.headerStyle}>Header</Header>
                 <Content style={Styles.contentStyle}>
+                    <Spin spinning={this.state.isLogging}>
                     <Form
                         ref={this.formRef}
                         initialValues={{
@@ -107,6 +111,7 @@ class LoginPage extends React.Component {
                             </Space>
                         </Form.Item>
                     </Form>
+                    </Spin>
                     <Modal
                         open={this.state.showErrorMsg}
                         title={"登录失败"}

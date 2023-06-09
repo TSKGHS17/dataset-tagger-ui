@@ -1,4 +1,4 @@
-const Functions = {
+export default class Functions {
     getCenter() {
         let winWidth, winHeight;
         if (window.innerWidth) {
@@ -14,12 +14,11 @@ const Functions = {
         }
 
         return [winWidth / 2, winHeight / 2];
-    },
+    }
+
     getItem(label, key, icon, children, type) {
         return {
             key, icon, children, label, type,
         };
     }
 }
-
-export default Functions;

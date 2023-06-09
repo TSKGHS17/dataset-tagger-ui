@@ -7,6 +7,9 @@ import PageNotFound from "../pages/PageNotFound";
 import HomePage from "../pages/HomePage";
 import Dataset from "../pages/Dataset";
 import Playground from "../pages/Playground";
+import PictureList from "../component/PictureList";
+import TextList from "../component/TextList";
+import AudioList from "../component/AudioList";
 
 const router = createBrowserRouter([{
     path: '/',
@@ -24,6 +27,18 @@ const router = createBrowserRouter([{
             path: 'playground',
             element: <Playground/>,
         },
+        {
+            path: 'dataset/picture-list',
+            element: <PictureList/>,
+        },
+        {
+            path: 'dataset/text-list',
+            element: <TextList/>,
+        },
+        {
+            path: 'dataset/audio-list',
+            element: <AudioList/>,
+        }
     ],
 }, {
     path: '/login',

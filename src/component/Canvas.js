@@ -1,12 +1,12 @@
 import React from "react";
-import {Input, Modal, message} from "antd";
+import {Select, Modal} from "antd";
 
 export default class Canvas extends React.Component {
     //TODO: constructor只被call了一次，写一个destructor
     constructor(props) {
         super(props);
         this.canvasRef = React.createRef();
-        this.inputRef = React.createRef();
+        this.selectRef = React.createRef();
         this.state = {
             image: new Image(),
             context: null,
@@ -20,7 +20,7 @@ export default class Canvas extends React.Component {
         this.beginY = 0;
         this.endX = 0;
         this.endY = 0;
-        this.labelList = [];
+        this.selectValue = "prod";
     }
 
     componentDidMount() {
@@ -55,7 +55,7 @@ export default class Canvas extends React.Component {
         this.endX = 2 * (event.clientX - this.canvasRef.current.getBoundingClientRect().left);
         this.endY = 2 * (event.clientY - this.canvasRef.current.getBoundingClientRect().top);
 
-        this.labelList.push([this.beginX, this.beginY, this.endX - this.beginX, this.endY - this.beginY]);
+        this.props.labelList.push([this.beginX, this.beginY, this.endX - this.beginX, this.endY - this.beginY]);
         this.drawRectangle();
         this.setState({
             isNamingLabel: true,
@@ -63,30 +63,29 @@ export default class Canvas extends React.Component {
     }
 
     drawRectangle() {
-        let curLabel = this.labelList[this.labelList.length - 1];
+        let curLabel = this.props.labelList[this.props.labelList.length - 1];
         this.state.context.strokeRect(curLabel[0], curLabel[1], curLabel[2], curLabel[3]);
+        this.props.updatePreviewImage(this.canvasRef.current.toDataURL('image/png'));
     }
 
     clearRectangle() {
-        // this.labelList.pop();
+        // this.props.labelList.pop();
         // this.state.context.clearRect(0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
         // this.state.context.drawImage(this.image, 0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
-        // for (let i = 0; i < this.labelList.length; ++i) {
-        //     this.state.strokeRect(this.labelList[i][0], this.labelList[i][1], this.labelList[i][2], this.labelList[i][3]);
+        // for (let i = 0; i < this.props.labelList.length; ++i) {
+        //     this.state.strokeRect(this.props.labelList[i][0], this.props.labelList[i][1], this.props.labelList[i][2], this.props.labelList[i][3]);
         // }
     }
 
+    handleSelectChange = (value) => {
+        this.selectValue = value;
+    }
+
     namingLabelHandleOk = () => {
-        const value = this.inputRef.current.input.value;
-        if (value === "") {
-            message.info("Label name can't be empty.");
-        }
-        else {
-            this.labelList[this.labelList.length - 1].push(value);
-            this.setState({
-                isNamingLabel: false,
-            });
-        }
+        this.props.labelList[this.props.labelList.length - 1].push(this.selectValue);
+        this.setState({
+            isNamingLabel: false,
+        });
     }
 
     namingLabelingHandleCancel = () => {
@@ -100,7 +99,7 @@ export default class Canvas extends React.Component {
 // header={<div>Labels</div>}
 // footer={null}
 // bordered
-// dataSource={labelList}
+// dataSource={this.props.labelList}
 // renderItem={(item) => <List.Item>{item}</List.Item>}
 // />
 
@@ -110,12 +109,12 @@ export default class Canvas extends React.Component {
                 <canvas
                     id={"canvas"}
                     ref={this.canvasRef}
-                    width={720}
-                    height={1280}
+                    width={1080}
+                    height={2400}
                     style={{
                         "cursor": "pointer",
-                        "width": 360,
-                        "height": 640,
+                        "width": 540,
+                        "height": 1200,
                     }}
                 />
                 <Modal
@@ -125,10 +124,36 @@ export default class Canvas extends React.Component {
                     onOk={this.namingLabelHandleOk}
                     onCancel={this.namingLabelingHandleCancel}
                 >
-                    <Input
+                    <Select
                         allowClear
-                        ref={this.inputRef}
-                        placeholder="Name the label"
+                        ref={this.selectRef}
+                        defaultValue="prod"
+                        style={{
+                            width: 120,
+                        }}
+                        onChange={this.handleSelectChange}
+                        options={[
+                            {
+                                value: 'prod',
+                                label: 'product',
+                            },
+                            {
+                                value: 'user',
+                                label: 'user',
+                            },
+                            {
+                                value: 'amt',
+                                label: 'amount',
+                            },
+                            {
+                                value: 'dis',
+                                label: 'discount',
+                            },
+                            {
+                                value: 'sub',
+                                label: 'submit',
+                            },
+                        ]}
                     />
                 </Modal>
             </>

@@ -2,6 +2,8 @@ import {Button, Modal, Space, Upload, message} from 'antd';
 import {LeftOutlined, RightOutlined, PlusOutlined} from "@ant-design/icons";
 import React from "react";
 import Canvas from "./Canvas";
+import {WithRouter} from "../router/WithRouter";
+import { saveAs } from 'file-saver';
 
 const getBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -11,7 +13,7 @@ const getBase64 = (file) =>
         reader.onerror = (error) => reject(error);
     });
 
-export default class PhotoWall extends React.Component {
+class PictureList extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -20,6 +22,9 @@ export default class PhotoWall extends React.Component {
             previewTitle: false,
             fileList: [],
             currentFileUid: undefined,
+            currentLabelList: [],
+            uid: this.props.searchParams.get('uid'),
+            did: this.props.searchParams.get('did'),
         };
     }
 
@@ -41,11 +46,28 @@ export default class PhotoWall extends React.Component {
 
     handleChange = (info) => {
         this.setState({
-           fileList: info.fileList,
+            fileList: info.fileList,
         });
     };
 
-    handleDownload = () => {};
+    handleDownload = () => {
+        const jsonData = JSON.stringify(this.state.currentLabelList);
+
+        const blob = new Blob([jsonData], { type: 'application/json' });
+
+        let dotIndex = this.state.previewTitle.indexOf('.');
+        saveAs(blob, `${this.state.previewTitle.substring(0, dotIndex)}.json`);
+
+        const byteCharacters = atob(this.state.previewImage.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const pic = new Blob([byteArray], { type: 'image/jpeg' });
+
+        saveAs(pic, `${this.state.previewTitle.substring(0, dotIndex)}.jpg`);
+    };
 
     prePic = () => {
         for (let index = 0; index < this.state.fileList.length; ++index) {
@@ -71,9 +93,18 @@ export default class PhotoWall extends React.Component {
         }
     };
 
+    backtoDataset = () => {
+        this.props.navigate(`/dataset?uid=${this.state.uid}`);
+    }
+
+    updatePreviewImage = (newImage) => {
+        this.setState({previewImage: newImage});
+    }
+
     render() {
         return (
-            <>
+            <Space direction="vertical" size="middle" style={{display: 'flex'}}>
+                <Button type="primary" onClick={this.backtoDataset}>返回</Button>
                 <Upload
                     action="http://localhost:3000/home"
                     listType="picture-card"
@@ -97,6 +128,7 @@ export default class PhotoWall extends React.Component {
                     open={this.state.previewOpen}
                     title={this.state.previewTitle}
                     onCancel={this.handleCancel}
+                    width={650}
                     footer={
                         <Space wrap>
                             <Button type="primary" onClick={this.handleDownload}>Save</Button>
@@ -104,9 +136,11 @@ export default class PhotoWall extends React.Component {
                             <Button icon={<RightOutlined/>} onClick={this.nextPic}></Button>
                         </Space>}
                 >
-                    <Canvas src={this.state.previewImage}/>
+                    <Canvas src={this.state.previewImage} labelList={this.state.currentLabelList} updatePreviewImage={this.updatePreviewImage}/>
                 </Modal>
-            </>
+            </Space>
         );
     }
 };
+
+export default WithRouter(PictureList);
