@@ -72,10 +72,6 @@ const Styles = {
         top: '20px',
         left: '60px',
     },
-    progress: {
-        position: 'absolute',
-        left: '350px',
-    },
     firstButton: {
         position: 'absolute',
         right: '20px',

@@ -96,7 +96,7 @@ class App extends React.Component {
                             }}
                         />
                         <Menu
-                            mode="vertical"
+                            mode="inline"
                             items={items}
                             onClick={this.menuHandleClick}
                         />

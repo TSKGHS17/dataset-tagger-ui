@@ -1,5 +1,5 @@
 import React from 'react';
-import {Avatar, Button, List, message, Progress, Skeleton, Tooltip} from "antd";
+import {Avatar, Button, List, message, Skeleton, Tooltip} from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
 import {
@@ -19,9 +19,11 @@ class Playground extends React.Component {
             isLoading: true,
             total: 0,
             currentShowing: [],
+            currentPage: 1,
+            currentPagesize: 10,
         }
 
-        let frontEndDatasetUrl = `/b/api/datasets?page_num=1&page_size=10`;
+        let frontEndDatasetUrl = `/b/api/datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -47,10 +49,13 @@ class Playground extends React.Component {
             if (data.code === 200) {
                 this.setState({
                     currentShowing: data.data['datasets'],
+                    currentPage: page,
+                    currentPagesize: pageSize,
                 });
             }
             else {
                 message.error(data['error_msg']);
+                this.props.navigate('/login');
             }
         }).catch((err) => {
             message.error(err.message);
@@ -73,9 +78,28 @@ class Playground extends React.Component {
 
     handleJoinButton = (item) => {
         // TODO 发送参与的信息
+        console.log(item)
+        const data = undefined;
+        axios.post(Constants.frontEndBaseUrl + `/b/api/applyTaggerAuth/${item['_id']}`, JSON.stringify(data), Constants.formHeader).then((res) => {
+            let {data} = res;
+            if (data.code === 200) {
+                for (let i = 0; i < this.state.currentShowing.length; ++i) {
+                    if (this.state.currentShowing[i]['_id'] === item['_id']) {
+                        let newCurrentShowing = this.state.currentShowing;
+                        newCurrentShowing[i]['relation'] = 'owner';
+                        this.setState({currentShowing: newCurrentShowing});
+                    }
+                }
+                message.success('加入成功！');
+            } else {
+                message.error(data['error_msg']);
+                this.props.navigate('/login');
+            }
+        }).catch((err) => {
+            message.error(err.message);
+            this.props.navigate('/login');
+        });
     }
-
-    //TODO: 进度条正确显示
 
     render() {
         return (
@@ -100,9 +124,8 @@ class Playground extends React.Component {
                                 </span>}
                                 description={<span style={Styles.listItemDesc}>{item['desc']}</span>}
                             />
-                            <Progress percent={30} size={[500, 5]} style={Styles.progress}/>
                             <Button type={"primary"} style={Styles.firstButton}
-                                    onClick={this.handleJoinButton(item)}>参与标注</Button>
+                                    onClick={() => this.handleJoinButton(item)} disabled={item['relation'] != null}>参与标注</Button>
                         </List.Item>
                     )}
                 />

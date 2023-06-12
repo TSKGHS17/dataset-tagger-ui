@@ -56,7 +56,7 @@ class LoginPage extends React.Component {
     render() {
         return (
             <Layout style={Styles.layoutStyle}>
-                <Header style={Styles.headerStyle}>Header</Header>
+                <Header style={Styles.headerStyle}/>
                 <Content style={Styles.contentStyle}>
                     <Spin spinning={this.state.isLogging}>
                     <Form
@@ -121,7 +121,7 @@ class LoginPage extends React.Component {
                         {this.state.errorMsg}
                     </Modal>
                 </Content>
-                <Footer style={Styles.footerStyle}>Footer</Footer>
+                <Footer style={Styles.footerStyle}/>
             </Layout>
         )
     }

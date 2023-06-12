@@ -1,12 +1,11 @@
 import React from "react";
-import {Button, Space, Input, Modal, Form, Radio, message, List, Avatar, Typography, Progress, Popconfirm, Skeleton} from 'antd';
+import {Button, Space, Input, Modal, Form, Radio, message, List, Avatar, Typography, Popconfirm, Skeleton} from 'antd';
 import axios from "axios";
 import Constants from "../utils/Constants";
 import {WithRouter} from "../router/WithRouter";
 import {FileImageTwoTone, FileTextTwoTone, QuestionCircleTwoTone, SoundTwoTone} from "@ant-design/icons";
 import Styles from "../utils/Styles";
 
-const {Search} = Input;
 const {Paragraph} = Typography;
 
 class Dataset extends React.Component {
@@ -18,9 +17,11 @@ class Dataset extends React.Component {
             uid: this.props.searchParams.get('uid'),
             currentShowing: [],
             isCreatingDataset: false,
+            currentPage: 1,
+            currentPagesize: 10,
         }
 
-        let frontEndDatasetUrl = `/b/api/datasets?page_num=1&page_size=10&publisher_id=${this.state.uid}`;
+        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -39,15 +40,18 @@ class Dataset extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/datasets?page_num=${page}&page_size=${pageSize}&publisher_id=${this.state.uid}`;
+        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${page}&page_size=${pageSize}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
                     currentShowing: data.data['datasets'],
+                    currentPage: page,
+                    currentPagesize: pageSize,
                 });
             } else {
                 message.error(data['error_msg']);
+                this.props.navigate('/login');
             }
         }).catch((err) => {
             message.error(err.message);
@@ -68,10 +72,6 @@ class Dataset extends React.Component {
         }
     }
 
-    onSearch = (value) => {
-        //TODO
-    }
-
     startCreateDataset = () => {
         this.setState({isCreatingDataset: true});
     }
@@ -84,29 +84,45 @@ class Dataset extends React.Component {
         axios.post(Constants.frontEndBaseUrl + '/b/api/dataset', values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                console.log(data)
                 message.success('创建成功');
-                let newCurrentShowing = this.state.currentShowing;
-                newCurrentShowing.push(data.data);
-                this.setState({currentShowing: newCurrentShowing});
+                if (this.state.currentShowing.length < this.state.currentPagesize) {
+                    let newCurrentShowing = this.state.currentShowing;
+                    newCurrentShowing.push(data.data);
+                    this.setState({
+                        currentShowing: newCurrentShowing,
+                        total: this.state.total + 1
+                    });
+                }
+                else {
+                    let newCurrentShowing = [];
+                    newCurrentShowing.push(data.data);
+                    this.setState({
+                        currentShowing: newCurrentShowing,
+                        currentPage: this.state.currentPage + 1,
+                        total: this.state.total + 1,
+                    });
+                }
             } else {
                 message.error(data['error_msg']);
             }
         }).catch((err) => {
             message.error(err.message);
         });
+        this.setState({isCreatingDataset: false});
     }
 
     handleManage = (item) => {
         let datasetId = item['_id'];
         switch (item['sample_type']) {
             case "text":
-                this.props.navigate(`/dataset/text-list?uid=${this.state.uid}&did=${datasetId}`);
+                this.props.navigate(`/dataset/text-list?uid=${this.state.uid}&did=${datasetId}&relation=${item['relation']}`);
                 break;
             case "audio":
-                this.props.navigate(`/dataset/audio-list?uid=${this.state.uid}&did=${datasetId}`);
+                this.props.navigate(`/dataset/audio-list?uid=${this.state.uid}&did=${datasetId}&relation=${item['relation']}`);
                 break;
             case "picture":
-                this.props.navigate(`/dataset/picture-list?uid=${this.state.uid}&did=${datasetId}`);
+                this.props.navigate(`/dataset/picture-list?uid=${this.state.uid}&did=${datasetId}&relation=${item['relation']}`);
                 break;
             default:
                 message.error('错误');
@@ -118,13 +134,36 @@ class Dataset extends React.Component {
         axios.delete(Constants.frontEndBaseUrl + `/b/api/dataset/${targetId}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
-                message.success('删除成功');
-                for (let i = 0; i < this.state.currentShowing.length; ++i) {
-                    if (this.state.currentShowing[i]['_id'] === targetId) {
-                        let newCurrentShowing = this.state.currentShowing.slice(0, i).concat(this.state.currentShowing.slice(i + 1));
-                        this.setState({currentShowing: newCurrentShowing});
+                if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
+                    let frontEndDatasetUrl =
+                        `/b/api/authorized_datasets?page_num=${this.state.currentPage - 1}&page_size=${this.state.currentPagesize}`;
+                    axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+                        let {data} = res;
+                        if (data.code === 200) {
+                            this.setState({
+                                isLoading: false,
+                                total: data.data['total'],
+                                currentShowing: data.data['datasets'],
+                                currentPage: this.state.currentPage - 1,
+                            });
+                        } else {
+                            message.error(data['error_msg']);
+                            this.props.navigate('/login');
+                        }
+                    }).catch((err) => {
+                        message.error(err.message);
+                        this.props.navigate('/login');
+                    });
+                }
+                else {
+                    for (let i = 0; i < this.state.currentShowing.length; ++i) {
+                        if (this.state.currentShowing[i]['_id'] === targetId) {
+                            let newCurrentShowing = this.state.currentShowing.slice(0, i).concat(this.state.currentShowing.slice(i + 1));
+                            this.setState({currentShowing: newCurrentShowing, total: this.state.total - 1});
+                        }
                     }
                 }
+                message.success('删除成功');
             } else {
                 message.error(data['error_msg']);
             }
@@ -183,7 +222,6 @@ class Dataset extends React.Component {
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
                 <Space direction="horizontal" size="middle">
                     <Button type="primary" onClick={this.startCreateDataset}>创建</Button>
-                    <Search placeholder="输入数据集名称" onSearch={this.onSearch} enterButton/>
                 </Space>
                 <Skeleton active loading={this.state.isLoading}>
                 <List
@@ -198,17 +236,27 @@ class Dataset extends React.Component {
                         <List.Item style={Styles.listItem}>
                             <List.Item.Meta
                                 avatar={<Avatar icon={this.getIcon(item)} size="large" style={Styles.listItemAvatar}/>}
-                                title={<Paragraph style={Styles.listItemTitle}
-                                                  editable={{onChange: (newTitle) => {this.editListItemTitle(item, newTitle)}}}>
+                                title={item['relation'] === 'owner' ?
+                                    <Paragraph style={Styles.listItemTitle}
+                                               editable={{onChange: (newTitle) => {this.editListItemTitle(item, newTitle)}}}>
+                                        {item['name']}
+                                    </Paragraph>
+                                    :
+                                    <Paragraph style={Styles.listItemTitle}>
                                         {item['name']}
                                     </Paragraph>}
-                                description={<Paragraph style={Styles.listItemDesc}
-                                                        type={"secondary"}
-                                                        editable={{onChange: (newDesc) => {this.editListItemDesc(item, newDesc)}}}>
+                                description={item['relation'] === 'owner' ?
+                                    <Paragraph style={Styles.listItemDesc}
+                                               type={"secondary"}
+                                               editable={{onChange: (newDesc) => {this.editListItemDesc(item, newDesc)}}}>
+                                        {item['desc']}
+                                    </Paragraph>
+                                    :
+                                    <Paragraph style={Styles.listItemDesc}
+                                               type={"secondary"}>
                                         {item['desc']}
                                     </Paragraph>}
                             />
-                            <Progress percent={30} size={[500, 5]} style={Styles.progress}/>
                             <Button type={"primary"} style={Styles.secondButton}
                                     onClick={() => this.handleManage(item)}>管理</Button>
                             <Popconfirm
@@ -217,8 +265,9 @@ class Dataset extends React.Component {
                                 onConfirm={() => {this.confirmDeleteDataset(item)}}
                                 okText="确认"
                                 cancelText="取消"
+                                disabled={item['relation'] !== 'owner'}
                             >
-                                <Button style={Styles.firstButton} danger>删除</Button>
+                                <Button style={Styles.firstButton} danger disabled={item['relation'] !== 'owner'}>删除</Button>
                             </Popconfirm>
                         </List.Item>
                     )}
