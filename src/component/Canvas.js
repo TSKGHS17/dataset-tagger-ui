@@ -1,43 +1,82 @@
 import React from "react";
-import {Select, Modal} from "antd";
+import {Input, Space, message} from "antd";
+import axios from "axios";
+import Constants from "../utils/Constants";
 
 export default class Canvas extends React.Component {
-    //TODO: constructor只被call了一次，写一个destructor
     constructor(props) {
         super(props);
+
         this.canvasRef = React.createRef();
-        this.selectRef = React.createRef();
         this.state = {
-            image: new Image(),
+            image: null,
             context: null,
             isNamingLabel: false,
+            beginX: 0,
+            beginY: 0,
+            endX: 0,
+            endY: 0,
+            inputValue: '',
+            labelList: [],
         };
-        this.image = new Image();
-        this.image.alt = "Current dealing";
-        this.image.src = this.props.src;
-
-        this.beginX = 0;
-        this.beginY = 0;
-        this.endX = 0;
-        this.endY = 0;
-        this.selectValue = "prod";
     }
 
     componentDidMount() {
         this.setState({
             context: this.canvasRef.current.getContext('2d'),
         });
-        this.canvasRef.current.addEventListener('mousedown', this.handleMousedown);
-        this.canvasRef.current.addEventListener('mouseup', this.handleMouseup);
-        this.image.onload = () => {
-            this.state.context.drawImage(this.image, 0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
-            let tmpContext = this.state.context;
-            tmpContext.strokeStyle = "#ae2029";
-            tmpContext.lineWidth = 3;
-            this.setState({
-                context: tmpContext,
-            });
+
+        if (!this.props.readonly) {
+            this.canvasRef.current.addEventListener('mousedown', this.handleMousedown);
+            this.canvasRef.current.addEventListener('mouseup', this.handleMouseup);
         }
+
+        let image = new Image();
+        image.alt = "Current dealing";
+        image.src = this.props.src;
+        this.setState({image: image}, () => {
+            this.state.image.onload = () => {
+                this.canvasRef.current.width = this.state.image.width;
+                this.canvasRef.current.height = this.state.image.height;
+                this.state.context.drawImage(this.state.image, 0, 0, this.state.image.width, this.state.image.height);
+                axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${this.props.sid}`, Constants.formHeader).then((res) => {
+                    const {data} = res;
+                    if (data.code === 200) {
+                        let tmpContext = this.state.context;
+                        tmpContext.strokeStyle = "#79deec";
+                        tmpContext.lineWidth = 3;
+                        tmpContext.font = '26px Arial';
+                        tmpContext.fillStyle = "#79deec";
+                        this.setState({
+                            labelList: data.data['tags'],
+                            context: tmpContext,
+                        }, () => {
+                            // drawTags
+                            for (let i = 0; i < this.state.labelList.length; ++i) {
+                                const beginPos = this.state.labelList[i]['begin_pos']['location'].split(',');
+                                const endPos = this.state.labelList[i]['end_pos']['location'].split(',');
+                                this.state.context.strokeRect(parseInt(beginPos[0]), parseInt(beginPos[1]),
+                                    parseInt(endPos[0]) - parseInt(beginPos[0]), parseInt(endPos[1]) - parseInt(beginPos[1]));
+                                this.state.context.fillText(this.state.labelList[i]['tag']['category'],
+                                    parseInt(beginPos[0]), parseInt(beginPos[1]));
+                            }
+
+                            if (!this.props.readonly) {
+                                let tmpContext = this.state.context;
+                                tmpContext.strokeStyle = "#ae2029";
+                                this.setState({
+                                    context: tmpContext,
+                                });
+                            }
+                        });
+                    } else {
+                        message.error(data['error_msg']);
+                    }
+                }).catch((err) => {
+                    message.error(err.message);
+                });
+            }
+        });
     }
 
     componentWillUnmount() {
@@ -46,117 +85,58 @@ export default class Canvas extends React.Component {
     }
 
     handleMousedown = (event) => {
-        this.beginX = 2 * (event.clientX - this.canvasRef.current.getBoundingClientRect().left);
-        this.beginY = 2 * (event.clientY - this.canvasRef.current.getBoundingClientRect().top);
-        this.state.context.beginPath();
+        this.setState({
+            beginX: event.clientX - this.canvasRef.current.getBoundingClientRect().left,
+            beginY: event.clientY - this.canvasRef.current.getBoundingClientRect().top,
+        });
     }
 
     handleMouseup = (event) => {
-        this.endX = 2 * (event.clientX - this.canvasRef.current.getBoundingClientRect().left);
-        this.endY = 2 * (event.clientY - this.canvasRef.current.getBoundingClientRect().top);
-
-        this.props.labelList.push([this.beginX, this.beginY, this.endX - this.beginX, this.endY - this.beginY]);
-        this.drawRectangle();
         this.setState({
-            isNamingLabel: true,
+            endX: event.clientX - this.canvasRef.current.getBoundingClientRect().left,
+            endY: event.clientY - this.canvasRef.current.getBoundingClientRect().top,
+        }, () => {
+            this.drawRectangle();
+            this.setState({
+                isNamingLabel: true,
+            });
         });
     }
 
     drawRectangle() {
-        let curLabel = this.props.labelList[this.props.labelList.length - 1];
-        this.state.context.strokeRect(curLabel[0], curLabel[1], curLabel[2], curLabel[3]);
-        this.props.updatePreviewImage(this.canvasRef.current.toDataURL('image/png'));
+        this.state.context.strokeRect(this.state.beginX, this.state.beginY,
+            this.state.endX - this.state.beginX, this.state.endY - this.state.beginY);
+        this.canvasRef.current.removeEventListener('mousedown', this.handleMousedown);
+        this.canvasRef.current.removeEventListener('mouseup', this.handleMouseup);
     }
 
-    clearRectangle() {
-        // this.props.labelList.pop();
-        // this.state.context.clearRect(0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
-        // this.state.context.drawImage(this.image, 0, 0, this.canvasRef.current.width, this.canvasRef.current.height);
-        // for (let i = 0; i < this.props.labelList.length; ++i) {
-        //     this.state.strokeRect(this.props.labelList[i][0], this.props.labelList[i][1], this.props.labelList[i][2], this.props.labelList[i][3]);
-        // }
+    handleInputValueChange = (e) => {
+        const value = e.target.value;
+        if (value !== '') {
+            this.props.finish(false);
+            this.props.label(this.state.beginX, this.state.beginY, this.state.endX, this.state.endY, value);
+        }
+        else {
+            this.props.finish(true);
+        }
     }
-
-    handleSelectChange = (value) => {
-        this.selectValue = value;
-    }
-
-    namingLabelHandleOk = () => {
-        this.props.labelList[this.props.labelList.length - 1].push(this.selectValue);
-        this.setState({
-            isNamingLabel: false,
-        });
-    }
-
-    namingLabelingHandleCancel = () => {
-        this.clearRectangle();
-        this.setState({
-            isNamingLabel: false,
-        });
-    }
-
-// <List
-// header={<div>Labels</div>}
-// footer={null}
-// bordered
-// dataSource={this.props.labelList}
-// renderItem={(item) => <List.Item>{item}</List.Item>}
-// />
 
     render() {
         return (
-            <>
+            <Space direction="vertical">
                 <canvas
                     id={"canvas"}
                     ref={this.canvasRef}
-                    width={1080}
-                    height={2400}
-                    style={{
+                    style={this.state.isNamingLabel || this.props.readonly ? {
+                        "pointerEvents": "none",
+                    } : {
                         "cursor": "pointer",
-                        "width": 540,
-                        "height": 1200,
                     }}
                 />
-                <Modal
-                    open={this.state.isNamingLabel}
-                    title={"Name the label"}
-                    destroyOnClose={true}
-                    onOk={this.namingLabelHandleOk}
-                    onCancel={this.namingLabelingHandleCancel}
-                >
-                    <Select
-                        allowClear
-                        ref={this.selectRef}
-                        defaultValue="prod"
-                        style={{
-                            width: 120,
-                        }}
-                        onChange={this.handleSelectChange}
-                        options={[
-                            {
-                                value: 'prod',
-                                label: 'product',
-                            },
-                            {
-                                value: 'user',
-                                label: 'user',
-                            },
-                            {
-                                value: 'amt',
-                                label: 'amount',
-                            },
-                            {
-                                value: 'dis',
-                                label: 'discount',
-                            },
-                            {
-                                value: 'sub',
-                                label: 'submit',
-                            },
-                        ]}
-                    />
-                </Modal>
-            </>
+                {
+                    this.props.readonly ? <div></div> : <Input placeholder="请输入标签" onChange={this.handleInputValueChange}></Input>
+                }
+            </Space>
 
         );
     }

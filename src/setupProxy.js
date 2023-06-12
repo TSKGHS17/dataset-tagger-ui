@@ -10,6 +10,6 @@ module.exports = function (app) {
             changeOrigin: true,
             pathRewrite: {'^/b': ''} // 将前端路径中的/api1替换为后者，然后向后端请求
         })
-    )
+    );
 }
 

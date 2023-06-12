@@ -18,6 +18,7 @@ import axios from "axios";
 import Constants from "../utils/Constants";
 import {InboxOutlined} from "@ant-design/icons";
 import ReactPlayer from 'react-player';
+import {saveAs} from 'file-saver';
 
 const { Dragger } = Upload;
 const { Text, Paragraph } = Typography;
@@ -63,6 +64,12 @@ class AudioList extends React.Component {
             onChange: (info) => {
                 const { status, response } = info.file;
                 if (status === 'done') {
+                    if (response.code !== 200) {
+                        message.error(`${response['error_msg']}`);
+                        message.error(`${info.file.name} 上传失败。`);
+                        return;
+                    }
+
                     if (this.state.currentShowing.length < this.state.currentPagesize) {
                         let newCurrentShowing = this.state.currentShowing;
                         newCurrentShowing.push(response.data);
@@ -361,12 +368,28 @@ class AudioList extends React.Component {
         });
     }
 
+    handleDownload = (item, index) => {
+        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                const jsonData = JSON.stringify(data.data['tags']);
+                const blob = new Blob([jsonData], {type: 'application/json'});
+
+                saveAs(blob, `${this.state.did}.${index + 1}.labels.json`);
+            } else {
+                message.error(data['error_msg']);
+            }
+        }).catch((err) => {
+            message.error(err.message);
+        });
+    }
+
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
                 <Space direction="horizontal" size={550} align="baseline">
                     <Space direction="horizontal" size="middle" align="baseline">
-                        <Button type="primary" onClick={this.startCreateSample}>创建样本</Button>
+                        <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
                         <Button onClick={this.backtoDataset}>返回</Button>
                     </Space>
                     <Space direction="horizontal" size="middle" align="baseline">
@@ -408,6 +431,7 @@ class AudioList extends React.Component {
                                             <Button danger disabled={this.state.relation === 'tagger'}>删除</Button>
                                         </Popconfirm>
                                         <Button onClick={() => this.startShowingLabels(item)}>查看标签</Button>
+                                        <Button onClick={() => this.handleDownload(item, index)}>下载</Button>
                                     </Space>
                                 </Space>
                             </List.Item>

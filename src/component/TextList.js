@@ -18,7 +18,7 @@ import axios from "axios";
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
 import MarkableText from "./MarkableText";
-import "./TextList.css";
+import "./List.css";
 import {saveAs} from 'file-saver';
 
 const {Paragraph, Text} = Typography;
@@ -435,7 +435,7 @@ class TextList extends React.Component {
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
                 <Space direction="horizontal" size={550} align="baseline">
                     <Space direction="horizontal" size="middle" align="baseline">
-                        <Button type="primary" onClick={this.startCreateSample}>创建样本</Button>
+                        <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
                         <Button onClick={this.backtoDataset}>返回</Button>
                     </Space>
                     <Space direction="horizontal" size="middle" align="baseline">

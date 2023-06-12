@@ -3,6 +3,7 @@ import axios from "axios";
 import Constants from "../utils/Constants";
 import {message, Skeleton, Typography} from "antd";
 import Styles from "../utils/Styles";
+import {WithRouter} from "../router/WithRouter";
 
 const {Title} = Typography;
 
@@ -44,4 +45,4 @@ class HomePage extends React.Component {
     }
 }
 
-export default HomePage;
+export default WithRouter(HomePage);

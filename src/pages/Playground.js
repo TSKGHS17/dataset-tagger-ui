@@ -77,8 +77,6 @@ class Playground extends React.Component {
     }
 
     handleJoinButton = (item) => {
-        // TODO 发送参与的信息
-        console.log(item)
         const data = undefined;
         axios.post(Constants.frontEndBaseUrl + `/b/api/applyTaggerAuth/${item['_id']}`, JSON.stringify(data), Constants.formHeader).then((res) => {
             let {data} = res;
