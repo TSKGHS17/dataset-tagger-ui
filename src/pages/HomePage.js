@@ -19,8 +19,8 @@ class HomePage extends React.Component {
 
 
     componentDidMount() {
-        let frontEndInfoUrl = '/b/api/user/info';
-        axios.get(Constants.frontEndBaseUrl + frontEndInfoUrl, Constants.formHeader).then((res) => {
+        let frontEndInfoUrl = '/api/user/info';
+        axios.get(Constants.base + frontEndInfoUrl, Constants.formHeader).then((res) => {
             if (res.data.code === 200) {
                 this.setState({username: res.data.data['username'], isLoading: false});
             }

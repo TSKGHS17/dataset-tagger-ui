@@ -52,7 +52,7 @@ class PictureList extends React.Component {
             name: 'file',
             multiple: true,
             method: 'post',
-            action: Constants.frontEndBaseUrl + `/b/api/sample/upload/${this.state.did}`,
+            action: Constants.base + `/api/sample/upload/${this.state.did}`,
             beforeUpload: (file) => {
                 const isJPG = file.type === "image/jpeg";
                 const isPNG = file.type === "image/png";
@@ -106,8 +106,8 @@ class PictureList extends React.Component {
 
     componentDidMount() {
         let frontEndDatasetUrl =
-            `/b/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+            `/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -115,8 +115,8 @@ class PictureList extends React.Component {
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
                     let frontEndTagsUrl =
-                        `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
+                        `/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+                    axios.get(Constants.base + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
@@ -145,7 +145,7 @@ class PictureList extends React.Component {
     }
 
     getPercentage = () => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.base + `/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
             let {data} = res;
             this.setState({percent: data['data']});
         }).catch((err) => {
@@ -159,16 +159,16 @@ class PictureList extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+        let frontEndDatasetUrl = `/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
                     total: data.data['total'],
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
-                    let frontEndTagsUrl = `/b/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
+                    let frontEndTagsUrl = `/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+                    axios.get(Constants.base + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
@@ -199,14 +199,14 @@ class PictureList extends React.Component {
 
     confirmDeleteSample = (item) => {
         const sid = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/sample/${sid}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.base + `/api/sample/${sid}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage - 1}
+                        `/api/samples?page_num=${this.state.currentPage - 1}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+                    axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
@@ -215,9 +215,9 @@ class PictureList extends React.Component {
                                 currentPage: this.state.currentPage - 1,
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                                axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
+                                axios.get(Constants.base + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
                                     if (data.code === 200) {
                                         this.setState({
@@ -244,9 +244,9 @@ class PictureList extends React.Component {
                     });
                 } else {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage}
+                        `/api/samples?page_num=${this.state.currentPage}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+                    axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
@@ -254,9 +254,9 @@ class PictureList extends React.Component {
                                 tmpCurrentShowing: data.data['samples'],
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                                axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
+                                axios.get(Constants.base + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
                                     if (data.code === 200) {
                                         this.setState({
@@ -293,7 +293,7 @@ class PictureList extends React.Component {
     }
 
     handleDownload = (item, index) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.base + `/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 const jsonData = JSON.stringify(data.data['tags']);
@@ -328,7 +328,7 @@ class PictureList extends React.Component {
                 "category": this.state.drawerLabelPos[4],
             },
         }
-        axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
+        axios.post(Constants.base + '/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 message.success('标记成功');
@@ -386,7 +386,7 @@ class PictureList extends React.Component {
     }
 
     startShowingLabels = (item) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.base + `/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -406,7 +406,7 @@ class PictureList extends React.Component {
     }
 
     confirmDeleteLabel = (item) => {
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.base + `/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.cancelShowingLabels();

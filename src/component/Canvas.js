@@ -39,7 +39,7 @@ export default class Canvas extends React.Component {
                 this.canvasRef.current.width = this.state.image.width;
                 this.canvasRef.current.height = this.state.image.height;
                 this.state.context.drawImage(this.state.image, 0, 0, this.state.image.width, this.state.image.height);
-                axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${this.props.sid}`, Constants.formHeader).then((res) => {
+                axios.get(Constants.base + `/api/sample/tag/${this.props.sid}`, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         let tmpContext = this.state.context;

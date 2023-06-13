@@ -26,8 +26,8 @@ class LoginPage extends React.Component {
             return;
         }
 
-        let frontEndLoginUrl = '/b/api/user/login';
-        axios.post(Constants.frontEndBaseUrl + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
+        let frontEndLoginUrl = '/api/user/login';
+        axios.post(Constants.base + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.setState({isLogging: false});

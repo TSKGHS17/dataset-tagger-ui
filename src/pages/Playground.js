@@ -23,8 +23,8 @@ class Playground extends React.Component {
             currentPagesize: 10,
         }
 
-        let frontEndDatasetUrl = `/b/api/datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+        let frontEndDatasetUrl = `/api/datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -43,8 +43,8 @@ class Playground extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/datasets?page_num=${page}&page_size=${pageSize}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+        let frontEndDatasetUrl = `/api/datasets?page_num=${page}&page_size=${pageSize}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -78,7 +78,7 @@ class Playground extends React.Component {
 
     handleJoinButton = (item) => {
         const data = undefined;
-        axios.post(Constants.frontEndBaseUrl + `/b/api/applyTaggerAuth/${item['_id']}`, JSON.stringify(data), Constants.formHeader).then((res) => {
+        axios.post(Constants.base + `/api/applyTaggerAuth/${item['_id']}`, JSON.stringify(data), Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 for (let i = 0; i < this.state.currentShowing.length; ++i) {

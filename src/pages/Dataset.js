@@ -21,8 +21,8 @@ class Dataset extends React.Component {
             currentPagesize: 10,
         }
 
-        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+        let frontEndDatasetUrl = `/api/authorized_datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -40,8 +40,8 @@ class Dataset extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${page}&page_size=${pageSize}`;
-        axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+        let frontEndDatasetUrl = `/api/authorized_datasets?page_num=${page}&page_size=${pageSize}`;
+        axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
@@ -81,7 +81,7 @@ class Dataset extends React.Component {
     }
 
     confirmCreateDataset = (values) => {
-        axios.post(Constants.frontEndBaseUrl + '/b/api/dataset', values, Constants.formHeader).then((res) => {
+        axios.post(Constants.base + '/api/dataset', values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 console.log(data)
@@ -131,13 +131,13 @@ class Dataset extends React.Component {
 
     confirmDeleteDataset = (item) => {
         const targetId = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/dataset/${targetId}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.base + `/api/dataset/${targetId}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
                     let frontEndDatasetUrl =
-                        `/b/api/authorized_datasets?page_num=${this.state.currentPage - 1}&page_size=${this.state.currentPagesize}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
+                        `/api/authorized_datasets?page_num=${this.state.currentPage - 1}&page_size=${this.state.currentPagesize}`;
+                    axios.get(Constants.base + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
@@ -180,7 +180,7 @@ class Dataset extends React.Component {
                 newCurrentItem['name'] = newTitle;
                 let newCurrentShowing = this.state.currentShowing;
                 newCurrentShowing[i] = newCurrentItem;
-                axios.put(Constants.frontEndBaseUrl + `/b/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
+                axios.put(Constants.base + `/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         this.setState({currentShowing: newCurrentShowing});
@@ -202,7 +202,7 @@ class Dataset extends React.Component {
                 newCurrentItem['desc'] = newDesc;
                 let newCurrentShowing = this.state.currentShowing;
                 newCurrentShowing[i] = newCurrentItem;
-                axios.put(Constants.frontEndBaseUrl + `/b/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
+                axios.put(Constants.base + `/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         this.setState({currentShowing: newCurrentShowing});

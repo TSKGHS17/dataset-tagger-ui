@@ -160,7 +160,7 @@ class MarkableText extends React.Component {
                 "category": this.state.label,
             },
         };
-        axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(value), Constants.formHeader).then((res) => {
+        axios.post(Constants.base + '/api/tag', JSON.stringify(value), Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 message.success('标记成功');
