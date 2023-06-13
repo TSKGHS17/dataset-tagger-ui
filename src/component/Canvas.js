@@ -1,7 +1,8 @@
 import React from "react";
-import {Input, Space, message} from "antd";
+import {Input, Space, message, Button} from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
+import {saveAs} from 'file-saver';
 
 export default class Canvas extends React.Component {
     constructor(props) {
@@ -32,6 +33,7 @@ export default class Canvas extends React.Component {
         }
 
         let image = new Image();
+        image.setAttribute('crossOrigin', 'anonymous')
         image.alt = "Current dealing";
         image.src = this.props.src;
         this.setState({image: image}, () => {
@@ -110,6 +112,23 @@ export default class Canvas extends React.Component {
         this.canvasRef.current.removeEventListener('mouseup', this.handleMouseup);
     }
 
+    downloadProcessedCanvas = () => {
+        const canvas = this.canvasRef.current;
+
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${this.props.src.split('/').pop()}`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }, 'image/jpeg');
+
+        const jsonData = JSON.stringify(this.state.labelList);
+        const blob = new Blob([jsonData], {type: 'application/json'});
+        saveAs(blob, `${this.props.src.split('/').pop().split('.')[0]}.labels.json`);
+    }
+
     handleInputValueChange = (e) => {
         const value = e.target.value;
         if (value !== '') {
@@ -134,7 +153,10 @@ export default class Canvas extends React.Component {
                     }}
                 />
                 {
-                    this.props.readonly ? <div></div> : <Input placeholder="请输入标签" onChange={this.handleInputValueChange}></Input>
+                    this.props.readonly ?
+                        <Button type="primary" onClick={this.downloadProcessedCanvas}>下载</Button>
+                        :
+                        <Input placeholder="请输入标签" onChange={this.handleInputValueChange}></Input>
                 }
             </Space>
 

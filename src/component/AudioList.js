@@ -12,11 +12,11 @@ import {
     Typography,
     Popconfirm,
     Drawer,
-    TimePicker, Form, Input
+    TimePicker, Form, Input, Tag, Col, Row
 } from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {InboxOutlined} from "@ant-design/icons";
+import {CheckCircleOutlined, InboxOutlined, SyncOutlined} from "@ant-design/icons";
 import ReactPlayer from 'react-player';
 import {saveAs} from 'file-saver';
 
@@ -316,6 +316,11 @@ class AudioList extends React.Component {
         axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                let newCurrentShowingLabels = this.state.currentShowingLabels;
+                newCurrentShowingLabels.push(data.data);
+                this.setState({
+                    currentShowingLabels: newCurrentShowingLabels,
+                })
                 message.success('标记成功');
             } else {
                 message.error(data['error_msg']);
@@ -384,22 +389,43 @@ class AudioList extends React.Component {
         });
     }
 
+    getListItemTag = (item) => {
+        for (let i = 0; i < this.state.currentShowingLabels.length; ++i) {
+            if (item['_id'] === this.state.currentShowingLabels[i]['sample_id']) {
+                return (
+                    <Tag icon={<CheckCircleOutlined />} color="success">
+                        success
+                    </Tag>
+                );
+            }
+        }
+
+        return (
+            <Tag icon={<SyncOutlined spin />} color="processing">
+                processing
+            </Tag>
+        );
+    }
+
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
-                <Space direction="horizontal" size={550} align="baseline">
-                    <Space direction="horizontal" size="middle" align="baseline">
-                        <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
-                        <Button onClick={this.backtoDataset}>返回</Button>
-                    </Space>
-                    <Space direction="horizontal" size="middle" align="baseline">
+                <Row align={'middle'}>
+                    <Col span={8}>
+                        <Space direction='horizontal' size='middle'>
+                            <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button onClick={this.backtoDataset}>返回</Button>
+                        </Space>
+                    </Col>
+                    <Col span={8} offset={7}>
                         <Text>当前标记进度：</Text>
-                        <Progress percent={(100 * this.state.percent).toFixed(2)} size={[500, 5]} status="active" strokeColor={{
-                            '0%': '#108ee9',
-                            '100%': '#87d068',
-                        }}/>
-                    </Space>
-                </Space>
+                        <Progress percent={(100 * this.state.percent).toFixed(2)} status="active"
+                                  strokeColor={{
+                                      '0%': '#108ee9',
+                                      '100%': '#87d068',
+                                  }}/>
+                    </Col>
+                </Row>
                 <Skeleton active loading={this.state.isLoading}>
                     <List
                         bordered
@@ -413,8 +439,11 @@ class AudioList extends React.Component {
                         renderItem={(item, index) => (
                             <List.Item>
                                 <Space direction={"vertical"}>
-                                    <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
-                                        {' ' + item['nginx_url'].split('/').pop()}</h2>
+                                    <Space direction={"horizontal"} size={"middle"} align={"baseline"}>
+                                        <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
+                                            {' ' + item['nginx_url'].split('/').pop()}</h2>
+                                        {this.getListItemTag(item)}
+                                    </Space>
                                     <Space direction={"horizontal"} size={"middle"}>
                                         <ReactPlayer url={Constants.frontEndAddr + item['nginx_url']} controls height={"50px"} width={"800px"}/>
                                         <Button type={"primary"} onClick={() => this.startLabelSample(item)}>标记</Button>

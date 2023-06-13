@@ -11,14 +11,12 @@ import {
     Typography,
     Upload,
     Image,
-    Popconfirm, Drawer
+    Popconfirm, Drawer, Tag, Row, Col
 } from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {InboxOutlined} from "@ant-design/icons";
-import {saveAs} from 'file-saver';
+import {CheckCircleOutlined, InboxOutlined, SyncOutlined} from "@ant-design/icons";
 import Canvas from "./Canvas";
-
 const {Text, Paragraph} = Typography;
 const {Dragger} = Upload;
 
@@ -292,21 +290,6 @@ class PictureList extends React.Component {
         });
     }
 
-    handleDownload = (item, index) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
-            const {data} = res;
-            if (data.code === 200) {
-                const jsonData = JSON.stringify(data.data['tags']);
-                const blob = new Blob([jsonData], {type: 'application/json'});
-                saveAs(blob, `${this.state.did}.${index + 1}.labels.json`);
-            } else {
-                message.error(data['error_msg']);
-            }
-        }).catch((err) => {
-            message.error(err.message);
-        });
-    }
-
     startLabelSample = (item) => {
         this.setState({isLabeling: true, currentLabeling: item});
     }
@@ -331,6 +314,11 @@ class PictureList extends React.Component {
         axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                let newCurrentShowingLabels = this.state.currentShowingLabels;
+                newCurrentShowingLabels.push(data.data);
+                this.setState({
+                    currentShowingLabels: newCurrentShowingLabels,
+                })
                 message.success('标记成功');
             } else {
                 message.error(data['error_msg']);
@@ -409,6 +397,14 @@ class PictureList extends React.Component {
         axios.delete(Constants.frontEndBaseUrl + `/b/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
+                for (let i = 0; i < this.state.currentShowingLabels.length; ++i) {
+                    if (this.state.currentShowingLabels[i]['_id'] === item['_id']) {
+                        let newCurrentShowingLabels = this.state.currentShowingLabels.slice(0, i).concat(this.state.currentShowingLabels.slice(i + 1));
+                        this.setState({
+                           currentShowingLabels: newCurrentShowingLabels,
+                        });
+                    }
+                }
                 this.cancelShowingLabels();
                 this.getPercentage();
                 message.success("删除成功！");
@@ -422,23 +418,43 @@ class PictureList extends React.Component {
         });
     }
 
+    getListItemTag = (item) => {
+        for (let i = 0; i < this.state.currentShowingLabels.length; ++i) {
+            if (item['_id'] === this.state.currentShowingLabels[i]['sample_id']) {
+                return (
+                    <Tag icon={<CheckCircleOutlined />} color="success">
+                        success
+                    </Tag>
+                );
+            }
+        }
+
+        return (
+            <Tag icon={<SyncOutlined spin />} color="processing">
+                processing
+            </Tag>
+        );
+    }
+
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
-                <Space direction="horizontal" size={550} align="baseline">
-                    <Space direction="horizontal" size="middle" align="baseline">
-                        <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
-                        <Button onClick={this.backtoDataset}>返回</Button>
-                    </Space>
-                    <Space direction="horizontal" size="middle" align="baseline">
+                <Row align={'middle'}>
+                    <Col span={8}>
+                        <Space direction='horizontal' size='middle'>
+                            <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button onClick={this.backtoDataset}>返回</Button>
+                        </Space>
+                    </Col>
+                    <Col span={8} offset={7}>
                         <Text>当前标记进度：</Text>
-                        <Progress percent={(100 * this.state.percent).toFixed(2)} size={[500, 5]} status="active"
+                        <Progress percent={(100 * this.state.percent).toFixed(2)} status="active"
                                   strokeColor={{
                                       '0%': '#108ee9',
                                       '100%': '#87d068',
                                   }}/>
-                    </Space>
-                </Space>
+                    </Col>
+                </Row>
                 <Skeleton active loading={this.state.isLoading}>
                     <List
                         bordered
@@ -453,8 +469,11 @@ class PictureList extends React.Component {
                             <List.Item>
                                <Space direction="horizontal" size="middle">
                                    <Space direction="vertical">
-                                       <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
-                                           {' ' + item['nginx_url'].split('/').pop()}</h2>
+                                       <Space direction={"horizontal"} size={"middle"} align={"baseline"}>
+                                           <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
+                                               {' ' + item['nginx_url'].split('/').pop()}</h2>
+                                           {this.getListItemTag(item)}
+                                       </Space>
                                        <Space direction={"horizontal"} size={"middle"}>
                                            <Button type={"primary"} onClick={() => this.startLabelSample(item)}>标记</Button>
                                            <Popconfirm
@@ -470,7 +489,6 @@ class PictureList extends React.Component {
                                                <Button danger disabled={this.state.relation === 'tagger'}>删除</Button>
                                            </Popconfirm>
                                            <Button onClick={() => this.startShowingLabels(item)}>查看标签</Button>
-                                           <Button onClick={() => this.handleDownload(item, index)}>下载</Button>
                                        </Space>
                                    </Space>
                                    <Image width={240}
@@ -518,7 +536,7 @@ class PictureList extends React.Component {
                         readonly={false}/>
                 </Drawer>
                 <Drawer
-                    width={1200}
+                    width={1500}
                     placement="right"
                     open={this.state.isShowingLabels}
                     title={"当前样本标记列表"}

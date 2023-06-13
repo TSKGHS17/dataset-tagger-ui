@@ -121,7 +121,7 @@ class App extends React.Component {
                         <Content style={Styles.contentStyleWithSider}>
                             <Outlet/>
                         </Content>
-                        <Footer style={Styles.footerStyle}> Footer Position </Footer>
+                        <Footer style={Styles.footerStyle}/>
                     </Layout>
                 </Layout>
             </div>
