@@ -56,7 +56,7 @@ class LoginPage extends React.Component {
     render() {
         return (
             <Layout style={Styles.layoutStyle}>
-                <Header style={Styles.headerStyle}/>
+                <Header style={Styles.headerStyle}>数据标注平台</Header>
                 <Content style={Styles.contentStyle}>
                     <Spin spinning={this.state.isLogging}>
                     <Form

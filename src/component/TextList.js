@@ -12,7 +12,7 @@ import {
     Popconfirm,
     Drawer,
     Popover,
-    Progress
+    Progress, Col, Row
 } from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
@@ -433,19 +433,22 @@ class TextList extends React.Component {
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
-                <Space direction="horizontal" size={550} align="baseline">
-                    <Space direction="horizontal" size="middle" align="baseline">
-                        <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
-                        <Button onClick={this.backtoDataset}>返回</Button>
-                    </Space>
-                    <Space direction="horizontal" size="middle" align="baseline">
+                <Row align={'middle'}>
+                    <Col span={8}>
+                        <Space direction='horizontal' size='middle'>
+                            <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button onClick={this.backtoDataset}>返回</Button>
+                        </Space>
+                    </Col>
+                    <Col span={8} offset={7}>
                         <Text>当前标记进度：</Text>
-                        <Progress percent={(100 * this.state.percent).toFixed(2)} size={[500, 5]} status="active" strokeColor={{
-                            '0%': '#108ee9',
-                            '100%': '#87d068',
-                        }}/>
-                    </Space>
-                </Space>
+                        <Progress percent={(100 * this.state.percent).toFixed(2)} status="active"
+                                  strokeColor={{
+                                      '0%': '#108ee9',
+                                      '100%': '#87d068',
+                                  }}/>
+                    </Col>
+                </Row>
                 <Skeleton active loading={this.state.isLoading}>
                     <List
                         bordered

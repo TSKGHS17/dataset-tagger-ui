@@ -9,6 +9,7 @@ const Styles = {
     headerStyle: {
         padding: 0,
         textAlign: 'center',
+        fontSize: '20px',
         color: '#fff',
         background: 'linear-gradient(#28B4FA, #2946FF)',
     },
