@@ -21,7 +21,8 @@ class Dataset extends React.Component {
             currentPagesize: 10,
         }
 
-        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
+        let frontEndDatasetUrl = Constants.proxy + Constants.authorized_datasets +
+            `?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -40,7 +41,7 @@ class Dataset extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/authorized_datasets?page_num=${page}&page_size=${pageSize}`;
+        let frontEndDatasetUrl = Constants.proxy + Constants.authorized_datasets + `?page_num=${page}&page_size=${pageSize}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -81,10 +82,13 @@ class Dataset extends React.Component {
     }
 
     confirmCreateDataset = (values) => {
-        axios.post(Constants.frontEndBaseUrl + '/b/api/dataset', values, Constants.formHeader).then((res) => {
+        const sendValues = {
+            ...values,
+            "tag_type": "num_tag"
+        }
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.dataset, sendValues, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
-                console.log(data)
                 message.success('创建成功');
                 if (this.state.currentShowing.length < this.state.currentPagesize) {
                     let newCurrentShowing = this.state.currentShowing;
@@ -131,12 +135,13 @@ class Dataset extends React.Component {
 
     confirmDeleteDataset = (item) => {
         const targetId = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/dataset/${targetId}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + Constants.proxy + Constants.dataset + `/${targetId}`,
+            Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
-                    let frontEndDatasetUrl =
-                        `/b/api/authorized_datasets?page_num=${this.state.currentPage - 1}&page_size=${this.state.currentPagesize}`;
+                    let frontEndDatasetUrl = Constants.proxy + Constants.authorized_datasets +
+                        `?page_num=${this.state.currentPage - 1}&page_size=${this.state.currentPagesize}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
@@ -180,7 +185,7 @@ class Dataset extends React.Component {
                 newCurrentItem['name'] = newTitle;
                 let newCurrentShowing = this.state.currentShowing;
                 newCurrentShowing[i] = newCurrentItem;
-                axios.put(Constants.frontEndBaseUrl + `/b/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
+                axios.put(Constants.frontEndBaseUrl + Constants.proxy + Constants.dataset + `/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         this.setState({currentShowing: newCurrentShowing});
@@ -202,7 +207,8 @@ class Dataset extends React.Component {
                 newCurrentItem['desc'] = newDesc;
                 let newCurrentShowing = this.state.currentShowing;
                 newCurrentShowing[i] = newCurrentItem;
-                axios.put(Constants.frontEndBaseUrl + `/b/api/dataset/${item['_id']}`, newCurrentItem, Constants.formHeader).then((res) => {
+                axios.put(Constants.frontEndBaseUrl + Constants.proxy + Constants.dataset + `/${item['_id']}`,
+                    newCurrentItem, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         this.setState({currentShowing: newCurrentShowing});
@@ -323,23 +329,6 @@ class Dataset extends React.Component {
                                 <Radio value={'text'}>文本</Radio>
                                 <Radio value={'picture'}>图片</Radio>
                                 <Radio value={'audio'}>音频</Radio>
-                            </Radio.Group>
-                        </Form.Item>
-
-                        <Form.Item
-                            name="tag_type"
-                            label="标记类型"
-                            rules={[
-                                {
-                                    required: true,
-                                    message: '请选择标记类型！',
-                                },
-                            ]}
-                        >
-                            <Radio.Group itialValues={'num_tag'}>
-                                <Radio value={'num_tag'}>数值标签</Radio>
-                                <Radio value={'class_tag'}>分类标签</Radio>
-                                <Radio value={'text_tag'}>文本标签</Radio>
                             </Radio.Group>
                         </Form.Item>
 

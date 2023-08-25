@@ -11,13 +11,13 @@ import {
     Typography,
     Upload,
     Image,
-    Popconfirm, Drawer, Tag, Row, Col
+    Popconfirm, Drawer, Row, Col
 } from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {CheckCircleOutlined, InboxOutlined, SyncOutlined} from "@ant-design/icons";
+import {InboxOutlined} from "@ant-design/icons";
 import Canvas from "./Canvas";
-const {Text, Paragraph} = Typography;
+const {Text} = Typography;
 const {Dragger} = Upload;
 
 class PictureList extends React.Component {
@@ -33,17 +33,15 @@ class PictureList extends React.Component {
             did: this.props.searchParams.get('did'),
             tmpCurrentShowing: [],
             currentShowing: [],
-            currentShowingLabels: [],
             isCreating: false,
             isLabeling: false,
-            isShowingLabels: false,
             currentLabeling: undefined,
             currentCheckingLabels: undefined,
             currentSampleLabels: [],
             percent: 0,
             relation: this.props.searchParams.get('relation'),
-            drawerFinishButton: true,
             drawerLabelPos: [],
+            labelOptions: [], // label options for this dataset
         }
 
         this.draggerProps = {
@@ -109,28 +107,9 @@ class PictureList extends React.Component {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
+                    isLoading: false,
                     total: data.data['total'],
-                    tmpCurrentShowing: data.data['samples'],
-                }, () => {
-                    let frontEndTagsUrl =
-                        `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
-                        let {data} = res;
-                        if (data.code === 200) {
-                            this.setState({
-                                isLoading: false,
-                                currentShowingLabels: data.data.tags,
-                                currentShowing: this.state.tmpCurrentShowing,
-                            });
-                            this.getPercentage();
-                        } else {
-                            message.error(data['error_msg']);
-                            this.props.navigate('/login');
-                        }
-                    }).catch((err) => {
-                        message.error(err.message);
-                        this.props.navigate('/login');
-                    });
+                    currentShowing: data.data['samples'],
                 });
             } else {
                 message.error(data['error_msg']);
@@ -162,28 +141,11 @@ class PictureList extends React.Component {
             let {data} = res;
             if (data.code === 200) {
                 this.setState({
+                    isLoading: false,
                     total: data.data['total'],
-                    tmpCurrentShowing: data.data['samples'],
-                }, () => {
-                    let frontEndTagsUrl = `/b/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
-                    axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
-                        let {data} = res;
-                        if (data.code === 200) {
-                            this.setState({
-                                isLoading: false,
-                                currentPage: page,
-                                currentPagesize: pageSize,
-                                currentShowingLabels: data.data.tags,
-                                currentShowing: this.state.tmpCurrentShowing,
-                            });
-                        } else {
-                            message.error(data['error_msg']);
-                            this.props.navigate('/login');
-                        }
-                    }).catch((err) => {
-                        message.error(err.message);
-                        this.props.navigate('/login');
-                    });
+                    currentShowing: data.data['samples'],
+                    currentPage: page,
+                    currentPagesize: pageSize,
                 });
             } else {
                 message.error(data['error_msg']);
@@ -208,29 +170,10 @@ class PictureList extends React.Component {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
+                                isLoading: false,
                                 total: data.data['total'],
-                                tmpCurrentShowing: data.data['samples'],
+                                currentShowing: data.data['samples'],
                                 currentPage: this.state.currentPage - 1,
-                            }, () => {
-                                let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
-                                    &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                                axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
-                                    let {data} = res;
-                                    if (data.code === 200) {
-                                        this.setState({
-                                            isLoading: false,
-                                            currentShowingLabels: data.data.tags,
-                                            currentShowing: this.state.tmpCurrentShowing,
-                                        });
-                                    } else {
-                                        message.error(data['error_msg']);
-                                        this.props.navigate('/login');
-                                    }
-                                }).catch((err) => {
-                                    message.error(err.message);
-                                    this.props.navigate('/login');
-                                });
                             });
                         } else {
                             message.error(data['error_msg']);
@@ -248,28 +191,9 @@ class PictureList extends React.Component {
                         let {data} = res;
                         if (data.code === 200) {
                             this.setState({
+                                isLoading: false,
                                 total: data.data['total'],
-                                tmpCurrentShowing: data.data['samples'],
-                            }, () => {
-                                let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
-                                    &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
-                                axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
-                                    let {data} = res;
-                                    if (data.code === 200) {
-                                        this.setState({
-                                            isLoading: false,
-                                            currentShowingLabels: data.data.tags,
-                                            currentShowing: this.state.tmpCurrentShowing,
-                                        });
-                                    } else {
-                                        message.error(data['error_msg']);
-                                        this.props.navigate('/login');
-                                    }
-                                }).catch((err) => {
-                                    message.error(err.message);
-                                    this.props.navigate('/login');
-                                });
+                                currentShowing: data.data['samples'],
                             });
                         } else {
                             message.error(data['error_msg']);
@@ -294,39 +218,8 @@ class PictureList extends React.Component {
         this.setState({isLabeling: true, currentLabeling: item});
     }
 
-    cancelLabelSample = () => {
-        this.setState({isLabeling: false, currentLabeling: undefined, drawerFinishButton: true});
-    }
-
-    confirmLabelSample = () => {
-        const formattedValues = {
-            "sample_id": this.state.currentLabeling['_id'],
-            "begin_pos": {
-                "location": `${this.state.drawerLabelPos[0]},${this.state.drawerLabelPos[1]}`,
-            },
-            "end_pos": {
-                "location": `${this.state.drawerLabelPos[2]},${this.state.drawerLabelPos[3]}`,
-            },
-            "tag": {
-                "category": this.state.drawerLabelPos[4],
-            },
-        }
-        axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
-            const {data} = res;
-            if (data.code === 200) {
-                let newCurrentShowingLabels = this.state.currentShowingLabels;
-                newCurrentShowingLabels.push(data.data);
-                this.setState({
-                    currentShowingLabels: newCurrentShowingLabels,
-                })
-                message.success('标记成功');
-            } else {
-                message.error(data['error_msg']);
-            }
-        }).catch((err) => {
-            message.error(err.message);
-        });
-        this.setState({isLabeling: false, currentLabeling: undefined, drawerFinishButton: true});
+    completeLabelSample = () => {
+        this.setState({isLabeling: false, currentLabeling: undefined});
     }
 
     getCanvasSrc = () => {
@@ -347,93 +240,73 @@ class PictureList extends React.Component {
         }
     }
 
-    getReadOnlyCanvasSrc = () => {
-        if (this.state.currentCheckingLabels !== undefined) {
-            return Constants.frontEndAddr + this.state.currentCheckingLabels['nginx_url'];
+    setLabelOptions = (newLabelOption) => {
+        if (newLabelOption === undefined) {
+            message.error("标签不能为空！");
         }
         else {
-            return undefined;
+            this.setState({labelOptions: [...this.state.labelOptions, newLabelOption]});
         }
     }
 
-    getReadOnlyCanvasSid = () => {
-        if (this.state.currentCheckingLabels !== undefined) {
-            return this.state.currentCheckingLabels['_id'];
-        }
-        else {
-            return undefined;
-        }
-    }
+    handleDownloadDataset = async () => {
+        //TODO 数据集下载
 
-    changeDrawerFinishButton = (value) => {
-        this.setState({drawerFinishButton: value});
-    }
-
-    changeDrawerLabelPos = (beginX, beginY, endX, endY, value) => {
-        this.setState({drawerLabelPos: [beginX, beginY, endX, endY, value]});
-    }
-
-    startShowingLabels = (item) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
-            const {data} = res;
-            if (data.code === 200) {
-                this.setState({
-                    isShowingLabels: true,
-                    currentSampleLabels: data.data['tags'],
-                    currentCheckingLabels: item});
-            } else {
-                message.error(data['error_msg']);
-            }
-        }).catch((err) => {
-            message.error(err.message);
-        });
-    }
-
-    cancelShowingLabels = () => {
-        this.setState({isShowingLabels: false, currentSampleLabels: [], currentCheckingLabels: undefined});
-    }
-
-    confirmDeleteLabel = (item) => {
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
-            const {data} = res;
-            if (data.code === 200) {
-                for (let i = 0; i < this.state.currentShowingLabels.length; ++i) {
-                    if (this.state.currentShowingLabels[i]['_id'] === item['_id']) {
-                        let newCurrentShowingLabels = this.state.currentShowingLabels.slice(0, i).concat(this.state.currentShowingLabels.slice(i + 1));
-                        this.setState({
-                           currentShowingLabels: newCurrentShowingLabels,
-                        });
-                    }
-                }
-                this.cancelShowingLabels();
-                this.getPercentage();
-                message.success("删除成功！");
-            } else {
-                message.error(data['error_msg']);
-                this.props.navigate('/login');
-            }
-        }).catch((err) => {
-            message.error(err.message);
-            this.props.navigate('/login');
-        });
-    }
-
-    getListItemTag = (item) => {
-        for (let i = 0; i < this.state.currentShowingLabels.length; ++i) {
-            if (item['_id'] === this.state.currentShowingLabels[i]['sample_id']) {
-                return (
-                    <Tag icon={<CheckCircleOutlined />} color="success">
-                        success
-                    </Tag>
-                );
-            }
-        }
-
-        return (
-            <Tag icon={<SyncOutlined spin />} color="processing">
-                processing
-            </Tag>
-        );
+        // const zip = new JSZip();
+        // const samplesRequests = [];
+        // const pageNum = Math.floor(this.state.total / this.state.currentPagesize) + 1;
+        //
+        // for (let i = 1; i <= pageNum; ++i) {
+        //     const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.samples +
+        //         `?page_num=${i}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`,
+        //         Constants.formHeader);
+        //     samplesRequests.push(request);
+        // }
+        //
+        // try {
+        //     const samplesResponses = await Promise.allSettled(samplesRequests);
+        //     const tagsRequests = [];
+        //
+        //     samplesResponses.forEach((response) => {
+        //         if (response.status === 'fulfilled') {
+        //             const data = response.value.data;
+        //             if (data.code === 200) {
+        //                 const samples = data.data['samples'];
+        //                 for (let j = 0; j < samples.length; ++j) {
+        //                     const textsBlob = new Blob([samples[j]['content']], {type: 'text/plain;charset=utf-8'});
+        //                     const sampleIndex = (data.data['curPage'] - 1) * this.state.currentPagesize + j + 1;
+        //                     zip.file(`${sampleIndex}.text.txt`, textsBlob, {binary: true});
+        //
+        //                     const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.sample_join_tags +
+        //                         `/${samples[j]['_id']}`, Constants.formHeader);
+        //                     tagsRequests.push(request);
+        //                 }
+        //             } else {
+        //                 message.error(data['error_msg']);
+        //             }
+        //         } else {
+        //             message.error(response.reason.message);
+        //         }
+        //     });
+        //
+        //     try {
+        //         const tagsResponses = await Promise.allSettled(tagsRequests);
+        //
+        //         tagsResponses.forEach((response, index) => {
+        //             const tags = response.value.data.data['tags'];
+        //             const jsonData = JSON.stringify(tags);
+        //             const blob = new Blob([jsonData], {type: 'application/json'});
+        //             zip.file(`${index + 1}.labels.json`, blob, {binary: true});
+        //         })
+        //
+        //         const content = await zip.generateAsync({type: 'blob'});
+        //         saveAs(content, `${this.state.did}.zip`);
+        //     } catch (err) {
+        //         message.error(err);
+        //     }
+        // } catch (err) {
+        //     message.error(err);
+        // }
     }
 
     render() {
@@ -443,6 +316,7 @@ class PictureList extends React.Component {
                     <Col span={8}>
                         <Space direction='horizontal' size='middle'>
                             <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            {/*<Button onClick={this.handleDownloadDataset}>数据集下载</Button>*/}
                             <Button onClick={this.backtoDataset}>返回</Button>
                         </Space>
                     </Col>
@@ -471,8 +345,8 @@ class PictureList extends React.Component {
                                    <Space direction="vertical">
                                        <Space direction={"horizontal"} size={"middle"} align={"baseline"}>
                                            <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
-                                               {' ' + item['nginx_url'].split('/').pop()}</h2>
-                                           {this.getListItemTag(item)}
+                                               {' ' + item['nginx_url'].split('/').pop().split('||')[0]}</h2>
+                                           {/*{this.getListItemTag(item)} show the process tag */}
                                        </Space>
                                        <Space direction={"horizontal"} size={"middle"}>
                                            <Button type={"primary"} onClick={() => this.startLabelSample(item)}>标记</Button>
@@ -488,7 +362,6 @@ class PictureList extends React.Component {
                                            >
                                                <Button danger disabled={this.state.relation === 'tagger'}>删除</Button>
                                            </Popconfirm>
-                                           <Button onClick={() => this.startShowingLabels(item)}>查看标签</Button>
                                        </Space>
                                    </Space>
                                    <Image width={240}
@@ -517,56 +390,22 @@ class PictureList extends React.Component {
                     </Dragger>
                 </Modal>
                 <Drawer
-                    width={1200}
+                    width={1500}
                     placement="right"
                     open={this.state.isLabeling}
                     title={"标记样本"}
-                    onClose={this.cancelLabelSample}
-                    extra={<Space direction="horizontal" size="middle">
-                        <Button type="primary" onClick={this.confirmLabelSample} disabled={this.state.drawerFinishButton}>完成</Button>
-                        <Button onClick={this.cancelLabelSample}>取消</Button>
-                    </Space>}
+                    onClose={this.completeLabelSample}
+                    extra={null}
                     destroyOnClose={true}
                 >
                     <Canvas
-                        src={this.getCanvasSrc()}
-                        finish={this.changeDrawerFinishButton}
-                        label={this.changeDrawerLabelPos}
+                        backgroundImage={this.getCanvasSrc()}
                         sid={this.getCanvasSid()}
-                        readonly={false}/>
-                </Drawer>
-                <Drawer
-                    width={1500}
-                    placement="right"
-                    open={this.state.isShowingLabels}
-                    title={"当前样本标记列表"}
-                    onClose={this.cancelShowingLabels}
-                    extra={<Button type="primary" onClick={this.cancelShowingLabels}>好的</Button>}
-                    destroyOnClose={true}>
-                    <Space direction={"horizontal"}>
-                        <Canvas
-                            src={this.getReadOnlyCanvasSrc()}
-                            sid={this.getReadOnlyCanvasSid()}
-                            readonly={true}/>
-                        <List
-                            bordered
-                            dataSource={this.state.currentSampleLabels}
-                            renderItem={(item, index) => (
-                                <List.Item>
-                                    <Typography>
-                                        <h4># {index + 1}</h4>
-                                        <Paragraph>{"标记：" + item['tag']['category']}</Paragraph>
-                                        <Paragraph>{"标记者：" + item['tagger_name']}</Paragraph>
-                                        <Paragraph>{"标记时间：" + item['tag_time'].slice(0, item['tag_time'].length - 2)}</Paragraph>
-                                        <Button danger
-                                                disabled={(this.state.relation === 'tagger') && (this.state.uid !== item['tagger_id'])}
-                                                onClick={() => this.confirmDeleteLabel(item)}
-                                        >删除</Button>
-                                    </Typography>
-                                </List.Item>
-                            )}
-                        />
-                    </Space>
+                        uid={this.state.uid}
+                        relation={this.state.relation}
+                        labelOptions={this.state.labelOptions}
+                        setLabelOptions={this.setLabelOptions}
+                    />
                 </Drawer>
             </Space>
         );

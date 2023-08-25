@@ -25,8 +25,7 @@ class RegisterPage extends React.Component {
             return;
         }
 
-        let frontEndRegisterUrl = '/b/api/user/register';
-        axios.post(Constants.frontEndBaseUrl + frontEndRegisterUrl, values, Constants.formHeader).then((res) => {
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.register, values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.setState({isRegistering: false});

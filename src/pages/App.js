@@ -36,8 +36,7 @@ class App extends React.Component {
     }
 
     componentDidMount() {
-        let frontEndInfoUrl = '/b/api/user/info';
-        axios.get(Constants.frontEndBaseUrl + frontEndInfoUrl, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.info, Constants.formHeader).then((res) => {
             if (res.data.code === 200) {
                 this.setState({username: res.data.data['username'], uid: res.data.data['uid']});
             }
@@ -61,8 +60,7 @@ class App extends React.Component {
     }
 
     logout = () => {
-        let frontEndLogoutUrl = '/b/api/user/logout';
-        axios.get(Constants.frontEndBaseUrl + frontEndLogoutUrl, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.logout, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 message.success('注销成功');

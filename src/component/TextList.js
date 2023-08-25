@@ -10,16 +10,16 @@ import {
     Typography,
     Input,
     Popconfirm,
-    Drawer,
     Popover,
-    Progress, Col, Row
+    Progress, Col, Row, Form, Select, Divider
 } from "antd";
+import {PlusOutlined} from "@ant-design/icons";
 import axios from "axios";
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
-import MarkableText from "./MarkableText";
 import "./List.css";
 import {saveAs} from 'file-saver';
+import JSZip from 'jszip';
 
 const {Paragraph, Text} = Typography;
 const {TextArea} = Input;
@@ -39,10 +39,19 @@ class TextList extends React.Component {
             currentShowing: [],
             currentShowingLabels: [],
             isCreating: false,
-            isLabeling: false,
-            currentLabeling: undefined,
             percent: 0,
             relation: this.props.searchParams.get('relation'),
+
+            // label options
+            newLabelOption: undefined,
+            labelOptions: [],
+
+            // label text
+            selectedText: '',
+            selectedIndices: [],
+            isNamingLabel: false,
+            label: '',
+            currentLabelSample: undefined,
         }
 
         this.textAreaRef = React.createRef();
@@ -125,8 +134,7 @@ class TextList extends React.Component {
                         currentShowing: newCurrentShowing,
                         total: this.state.total + 1,
                     });
-                }
-                else {
+                } else {
                     let newCurrentShowing = [];
                     newCurrentShowing.push(data.data);
                     this.setState({
@@ -199,11 +207,15 @@ class TextList extends React.Component {
             <Typography>
                 <Space direction="vertical" size="middle">
                     <h3># {sampleIndex}</h3>
-                    <div>
-                        {this.renderMarkedParagraph(texts, labels)}
+                    <div
+                        onMouseUp={() => this.handleSelection(sid)}
+                        style={{userSelect: 'text'}}
+                    >
+                        <Paragraph>
+                            {this.renderMarkedParagraph(texts, labels)}
+                        </Paragraph>
                     </div>
                     <Space direction="horizontal" size="middle">
-                        <Button type="primary" onClick={() => this.startLabelSample(item)}>标记</Button>
                         <Popconfirm
                             title="删除样本"
                             description="确认删除该样本吗？"
@@ -221,6 +233,103 @@ class TextList extends React.Component {
                 </Space>
             </Typography>
         );
+    }
+    handleSelection = (sid) => {
+        const selection = window.getSelection();
+        const selected = selection.toString();
+        const range = selection.getRangeAt(0);
+        // console.log(range)
+        //TODO
+        if (range.startContainer.parentElement instanceof HTMLSpanElement && range.commonAncestorContainer.nodeType === Node.TEXT_NODE) {
+            let startContainerPreviousSpan = range.startContainer.parentElement.previousElementSibling;
+            let startIndexOffset = 0;
+            while (startContainerPreviousSpan) {
+                startIndexOffset += startContainerPreviousSpan.innerText.length;
+                startContainerPreviousSpan = startContainerPreviousSpan.previousElementSibling;
+            }
+
+            let endContainerPreviousSpan = range.endContainer.parentElement.previousElementSibling;
+            let endIndexOffset = 0;
+            while (endContainerPreviousSpan) {
+                endIndexOffset += endContainerPreviousSpan.innerText.length;
+                endContainerPreviousSpan = endContainerPreviousSpan.previousElementSibling;
+            }
+
+            const startIndex = range.startOffset + startIndexOffset;
+            const endIndex = range.endOffset + endIndexOffset;
+            if (startIndex < endIndex) {
+                this.setState({
+                    selectedText: selected,
+                    selectedIndices: [startIndex, endIndex],
+                    currentLabelSample: sid,
+                    isNamingLabel: true,
+                });
+            }
+        }
+    };
+
+    confirmCreateLabel = (values) => {
+        // values['label'] is an array, change it into string "label1;label2;label3"
+        let label = values['label'][0];
+        for (let i = 1; i < values['label'].length; ++i) {
+            label += ";" + values['label'][i];
+        }
+
+        const value = {
+            "sample_id": this.state.currentLabelSample,
+            "begin_pos": {
+                "bchar": this.state.selectedIndices[0],
+            },
+            "end_pos": {
+                "bchar": this.state.selectedIndices[1],
+            },
+            "tag": {
+                "category": label,
+            },
+        };
+
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag,
+            JSON.stringify(value), Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                message.success('标记成功');
+                // renew tags
+                axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.tags +
+                    `?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`,
+                    Constants.formHeader).then((res) => {
+                    let {data} = res;
+                    if (data.code === 200) {
+                        this.setState({
+                            currentShowingLabels: data.data.tags,
+                            currentShowing: this.state.tmpCurrentShowing,
+                        });
+                    } else {
+                        message.error(data['error_msg']);
+                    }
+                }).catch((err) => {
+                    message.error(err.message);
+                });
+            } else {
+                message.error(data['error_msg']);
+            }
+        }).catch((err) => {
+            message.error(err.message);
+        });
+        this.setState({
+            selectedText: '',
+            selectedIndices: [],
+            currentLabelSample: undefined,
+            isNamingLabel: false,
+        });
+    }
+
+    cancelCreateLabel = () => {
+        this.setState({
+            selectedText: '',
+            selectedIndices: [],
+            currentLabelSample: undefined,
+            isNamingLabel: false,
+        });
     }
 
     renderMarkedParagraph = (texts, labels) => {
@@ -387,19 +496,7 @@ class TextList extends React.Component {
         });
     }
 
-    startLabelSample = (item) => {
-        this.setState({isLabeling: true, currentLabeling: item});
-    }
-
-    cancelLabelSample = () => {
-        this.setState({isLabeling: false, currentLabeling: undefined});
-    }
-
-    confirmLabelSample = () => {
-        this.renewLabels();
-        this.setState({isLabeling: false, currentLabeling: undefined});
-    }
-
+    // utility
     renewLabels = () => {
         let frontEndTagsUrl =
             `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
@@ -420,6 +517,7 @@ class TextList extends React.Component {
         });
     }
 
+    // Download
     handleDownload = (texts, labels, sampleIndex) => {
         const jsonData = JSON.stringify(labels);
 
@@ -430,13 +528,83 @@ class TextList extends React.Component {
         saveAs(textsBlob, `${this.state.did}.${sampleIndex}.text.txt`);
     }
 
+    handleDownloadDataset = async () => {
+        const zip = new JSZip();
+        const samplesRequests = [];
+        const pageNum = Math.floor(this.state.total / this.state.currentPagesize) + 1;
+
+        for (let i = 1; i <= pageNum; ++i) {
+            const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.samples +
+                `?page_num=${i}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`,
+                Constants.formHeader);
+            samplesRequests.push(request);
+        }
+
+        try {
+            const samplesResponses = await Promise.allSettled(samplesRequests);
+            const tagsRequests = [];
+
+            samplesResponses.forEach((response) => {
+                if (response.status === 'fulfilled') {
+                    const data = response.value.data;
+                    if (data.code === 200) {
+                        const samples = data.data['samples'];
+                        for (let j = 0; j < samples.length; ++j) {
+                            const textsBlob = new Blob([samples[j]['content']], {type: 'text/plain;charset=utf-8'});
+                            const sampleIndex = (data.data['curPage'] - 1) * this.state.currentPagesize + j + 1;
+                            zip.file(`${sampleIndex}.text.txt`, textsBlob, {binary: true});
+
+                            const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.sample_join_tags +
+                                `/${samples[j]['_id']}`, Constants.formHeader);
+                            tagsRequests.push(request);
+                        }
+                    } else {
+                        message.error(data['error_msg']);
+                    }
+                } else {
+                    message.error(response.reason.message);
+                }
+            });
+
+            try {
+                const tagsResponses = await Promise.allSettled(tagsRequests);
+
+                tagsResponses.forEach((response, index) => {
+                    const tags = response.value.data.data['tags'];
+                    const jsonData = JSON.stringify(tags);
+                    const blob = new Blob([jsonData], {type: 'application/json'});
+                    zip.file(`${index + 1}.labels.json`, blob, {binary: true});
+                })
+
+                const content = await zip.generateAsync({type: 'blob'});
+                saveAs(content, `${this.state.did}.zip`);
+            } catch (err) {
+                message.error(err);
+            }
+        } catch (err) {
+            message.error(err);
+        }
+    }
+
+    // label option
+    addLabelOption = () => {
+        if (this.state.newLabelOption === undefined) {
+            message.error("标签不能为空！");
+        }
+        else {
+            this.setState({labelOptions: [...this.state.labelOptions, this.state.newLabelOption]});
+        }
+    }
+
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
                 <Row align={'middle'}>
                     <Col span={8}>
                         <Space direction='horizontal' size='middle'>
-                            <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button type="primary" onClick={this.startCreateSample}
+                                    disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button onClick={this.handleDownloadDataset}>数据集下载</Button>
                             <Button onClick={this.backtoDataset}>返回</Button>
                         </Space>
                     </Col>
@@ -479,19 +647,76 @@ class TextList extends React.Component {
                 >
                     <TextArea allowClear autoSize ref={this.textAreaRef}/>
                 </Modal>
-                <Drawer
-                    placement="right"
-                    open={this.state.isLabeling}
-                    title={"标记样本"}
-                    onClose={this.cancelLabelSample}
-                    extra={<Space direction="horizontal" size="middle">
-                        <Button type="primary" onClick={this.confirmLabelSample}>完成</Button>
-                        <Button onClick={this.cancelLabelSample}>取消</Button>
-                    </Space>}
+                <Modal
+                    bodyStyle={{
+                        width: '400px',
+                        height: '120px',
+                    }}
+                    width={450}
+                    open={this.state.isNamingLabel}
+                    onCancel={this.cancelCreateLabel}
+                    footer={null}
                     destroyOnClose={true}
                 >
-                    <MarkableText item={this.state.currentLabeling} allLabels={this.state.currentShowingLabels}/>
-                </Drawer>
+                    <Form
+                        layout={"vertical"}
+                        onFinish={this.confirmCreateLabel}
+                    >
+                        <Form.Item
+                            label={"标签："}
+                            name="label"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: '请输入标签！',
+                                },
+                            ]}
+                        >
+                            <Select
+                                mode="tags"
+                                style={{
+                                    width: '100%',
+                                }}
+                                allowClear
+                                placeholder="选择标签"
+                                options={this.state.labelOptions.map((item) => ({
+                                    label: item,
+                                    value: item,
+                                }))}
+                                dropdownRender={(menu) => (
+                                    <>
+                                        {menu}
+                                        <Divider
+                                            style={{
+                                                margin: '8px 0',
+                                            }}
+                                        />
+                                        <Space
+                                            style={{
+                                                padding: '0 8px 4px',
+                                            }}
+                                        >
+                                            <Input
+                                                placeholder="输入标签"
+                                                onChange={(e) => {
+                                                    this.setState({newLabelOption: e.target.value});
+                                                }}
+                                            />
+                                            <Button
+                                                type="text"
+                                                icon={<PlusOutlined/>}
+                                                onClick={this.addLabelOption}
+                                            >增加</Button>
+                                        </Space>
+                                    </>
+                                )}
+                            />
+                        </Form.Item>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit">确定</Button>
+                        </Form.Item>
+                    </Form>
+                </Modal>
             </Space>
         );
     }

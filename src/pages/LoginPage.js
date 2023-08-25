@@ -26,8 +26,7 @@ class LoginPage extends React.Component {
             return;
         }
 
-        let frontEndLoginUrl = '/b/api/user/login';
-        axios.post(Constants.frontEndBaseUrl + frontEndLoginUrl, values, Constants.formHeader).then((res) => {
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.login, values, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.setState({isLogging: false});
@@ -61,9 +60,6 @@ class LoginPage extends React.Component {
                     <Spin spinning={this.state.isLogging}>
                     <Form
                         ref={this.formRef}
-                        initialValues={{
-                            role: "publisher",
-                        }}
                         onFinish={this.onFinish}
                     >
                         <Form.Item

@@ -1,165 +1,540 @@
 import React from "react";
-import {Input, Space, message, Button} from "antd";
+import {Layer, Stage, Image, Rect, Text} from "react-konva";
+import useImage from 'use-image';
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {saveAs} from 'file-saver';
+import {Button, Card, Divider, Form, Input, message, Modal, Select, Space, Switch} from "antd";
+import Rectangle from "./Rectangle";
+import {PlusOutlined} from "@ant-design/icons";
+
+const BackgroundImage = (values) => {
+    const [image] = useImage(values.imageUrl);
+    if (image) {
+        values.getImageSize(image.width, image.height);
+    }
+
+    return <Image image={image}/>;
+};
 
 export default class Canvas extends React.Component {
     constructor(props) {
         super(props);
 
-        this.canvasRef = React.createRef();
         this.state = {
-            image: null,
-            context: null,
-            isNamingLabel: false,
-            beginX: 0,
-            beginY: 0,
+            imageWidth: 0,
+            imageHeight: 0,
+            rectangles: [],
+            isCreatingRects: true,
+
+            // current chosen tag
+            selectedRectangleId: null,
+            tag: undefined,
+            tagTime: undefined,
+            taggerName: undefined,
+            taggerId: undefined,
+
+            // drawing new rect
+            isDrawing: false,
+            startX: 0,
+            startY: 0,
             endX: 0,
             endY: 0,
-            inputValue: '',
-            labelList: [],
-        };
+            isNamingRect: false,
+
+            newLabelOption: undefined,
+        }
     }
 
     componentDidMount() {
-        this.setState({
-            context: this.canvasRef.current.getContext('2d'),
-        });
+        this.getSampleTags();
+    }
 
-        if (!this.props.readonly) {
-            this.canvasRef.current.addEventListener('mousedown', this.handleMousedown);
-            this.canvasRef.current.addEventListener('mouseup', this.handleMouseup);
-        }
-
-        let image = new Image();
-        image.setAttribute('crossOrigin', 'anonymous')
-        image.alt = "Current dealing";
-        image.src = this.props.src;
-        this.setState({image: image}, () => {
-            this.state.image.onload = () => {
-                this.canvasRef.current.width = this.state.image.width;
-                this.canvasRef.current.height = this.state.image.height;
-                this.state.context.drawImage(this.state.image, 0, 0, this.state.image.width, this.state.image.height);
-                axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${this.props.sid}`, Constants.formHeader).then((res) => {
-                    const {data} = res;
-                    if (data.code === 200) {
-                        let tmpContext = this.state.context;
-                        tmpContext.strokeStyle = "#79deec";
-                        tmpContext.lineWidth = 3;
-                        tmpContext.font = '26px Arial';
-                        tmpContext.fillStyle = "#79deec";
-                        this.setState({
-                            labelList: data.data['tags'],
-                            context: tmpContext,
-                        }, () => {
-                            // drawTags
-                            for (let i = 0; i < this.state.labelList.length; ++i) {
-                                const beginPos = this.state.labelList[i]['begin_pos']['location'].split(',');
-                                const endPos = this.state.labelList[i]['end_pos']['location'].split(',');
-                                this.state.context.strokeRect(parseInt(beginPos[0]), parseInt(beginPos[1]),
-                                    parseInt(endPos[0]) - parseInt(beginPos[0]), parseInt(endPos[1]) - parseInt(beginPos[1]));
-                                this.state.context.fillText(this.state.labelList[i]['tag']['category'],
-                                    parseInt(beginPos[0]), parseInt(beginPos[1]));
-                            }
-
-                            if (!this.props.readonly) {
-                                let tmpContext = this.state.context;
-                                tmpContext.strokeStyle = "#ae2029";
-                                this.setState({
-                                    context: tmpContext,
-                                });
-                            }
-                        });
-                    } else {
-                        message.error(data['error_msg']);
-                    }
-                }).catch((err) => {
-                    message.error(err.message);
+    getSampleTags = () => {
+        axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.sample_join_tags + `/${this.props.sid}`,
+            Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                this.setState({
+                    rectangles: data.data['tags'],
                 });
+            } else {
+                message.error(data['error_msg']);
             }
+        }).catch((err) => {
+            message.error(err.message);
         });
     }
 
-    componentWillUnmount() {
-        this.canvasRef.current.removeEventListener('mousedown', this.handleMousedown);
-        this.canvasRef.current.removeEventListener('mouseup', this.handleMouseup);
-    }
-
-    handleMousedown = (event) => {
-        this.setState({
-            beginX: event.clientX - this.canvasRef.current.getBoundingClientRect().left,
-            beginY: event.clientY - this.canvasRef.current.getBoundingClientRect().top,
-        });
-    }
-
-    handleMouseup = (event) => {
-        this.setState({
-            endX: event.clientX - this.canvasRef.current.getBoundingClientRect().left,
-            endY: event.clientY - this.canvasRef.current.getBoundingClientRect().top,
-        }, () => {
-            this.drawRectangle();
+    // get the size of the backgroundImage
+    getImageSize = (width, height) => {
+        if (this.state.imageWidth === 0 && this.state.imageHeight === 0) {
             this.setState({
-                isNamingLabel: true,
+                imageWidth: width,
+                imageHeight: height,
             });
+        }
+    }
+
+    switchMode = (isCreatingRects) => {
+        this.setState({isCreatingRects: isCreatingRects});
+    }
+
+    // drawing
+    drawingHandleMouseDown = (e) => {
+        const {layerX, layerY} = e.evt;
+        this.setState({
+            isDrawing: true,
+            startX: layerX,
+            startY: layerY,
+            endX: layerX,
+            endY: layerY,
         });
     }
 
-    drawRectangle() {
-        this.state.context.strokeRect(this.state.beginX, this.state.beginY,
-            this.state.endX - this.state.beginX, this.state.endY - this.state.beginY);
-        this.canvasRef.current.removeEventListener('mousedown', this.handleMousedown);
-        this.canvasRef.current.removeEventListener('mouseup', this.handleMouseup);
-    }
-
-    downloadProcessedCanvas = () => {
-        const canvas = this.canvasRef.current;
-
-        canvas.toBlob(blob => {
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${this.props.src.split('/').pop()}`;
-            link.click();
-            URL.revokeObjectURL(url);
-        }, 'image/jpeg');
-
-        const jsonData = JSON.stringify(this.state.labelList);
-        const blob = new Blob([jsonData], {type: 'application/json'});
-        saveAs(blob, `${this.props.src.split('/').pop().split('.')[0]}.labels.json`);
-    }
-
-    handleInputValueChange = (e) => {
-        const value = e.target.value;
-        if (value !== '') {
-            this.props.finish(false);
-            this.props.label(this.state.beginX, this.state.beginY, this.state.endX, this.state.endY, value);
+    drawingHandleMouseMove = (e) => {
+        if (!this.state.isDrawing) {
+            return;
         }
-        else {
-            this.props.finish(true);
+        const {layerX, layerY} = e.evt;
+        this.setState({
+            endX: layerX,
+            endY: layerY,
+        });
+    }
+
+    drawingHandleMouseUp = () => {
+        if (this.state.isDrawing) {
+            this.setState({
+                isDrawing: false,
+                isNamingRect: true,
+            });
         }
     }
 
-    render() {
-        return (
-            <Space direction="vertical">
-                <canvas
-                    id={"canvas"}
-                    ref={this.canvasRef}
-                    style={this.state.isNamingLabel || this.props.readonly ? {
-                        "pointerEvents": "none",
-                    } : {
-                        "cursor": "pointer",
-                    }}
-                />
-                {
-                    this.props.readonly ?
-                        <Button type="primary" onClick={this.downloadProcessedCanvas}>下载</Button>
-                        :
-                        <Input placeholder="请输入标签" onChange={this.handleInputValueChange}></Input>
-                }
-            </Space>
+    confirmNamingRect = (values) => {
+        // values['label'] is an array, change it into string "label1;label2;label3"
+        let label = values['label'][0];
+        for (let i = 1; i < values['label'].length; ++i) {
+            label += ";" + values['label'][i];
+        }
 
-        );
+        const value = {
+            "sample_id": this.props.sid,
+            "begin_pos": {
+                "location": `${this.state.startX},${this.state.startY}`,
+            },
+            "end_pos": {
+                "location": `${this.state.endX},${this.state.endY}`,
+            },
+            "tag": {
+                "category": label,
+            },
+        };
+
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag,
+            JSON.stringify(value), Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                message.success('标记成功');
+                // renew tags
+                this.getSampleTags();
+            } else {
+                message.error(data['error_msg']);
+            }
+        }).catch((err) => {
+            message.error(err.message);
+        });
+
+        this.setState({
+            isNamingRect: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0,
+        });
     }
-}
+
+    cancelNamingRect = () => {
+        this.setState({
+            isNamingRect: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0,
+        });
+    }
+
+    updateTagName = (newTags) => {
+        if (newTags.length === 0) {
+            message.warning("标签不能为空，修改失败");
+            return;
+        }
+
+        // find the info of the target tag
+        let beginPos, endPos;
+        for (let i = 0; i < this.state.rectangles.length; ++i) {
+            if (this.state.rectangles[i]['_id'] === this.state.selectedRectangleId) {
+                beginPos = this.state.rectangles[i]['begin_pos']['location'];
+                endPos = this.state.rectangles[i]['end_pos']['location'];
+            }
+        }
+
+        // transform [tag1, tag2] into "tag1;tag2"
+        let newTagsString = newTags[0];
+        for (let i = 1; i < newTags.length; ++i) {
+            newTagsString += ";" + newTags[i];
+        }
+
+        const value = {
+            "sample_id": this.props.sid,
+            "begin_pos": {
+                "location": beginPos,
+            },
+            "end_pos": {
+                "location": endPos,
+            },
+            "tag": {
+                "category": newTagsString,
+            },
+        };
+
+        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag + `/${this.state.selectedRectangleId}`,
+            JSON.stringify(value), Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                message.success('修改成功');
+                // renew tags
+                this.getSampleTags();
+                this.setState({
+                    tag: newTagsString,
+                });
+            } else {
+                message.error(data['error_msg']);
+            }
+        }).catch((err) => {
+            message.error(err.message);
+        });
+    }
+
+    checkDeselect = (e) => {
+        // click on <Image>
+        if (e.target.index === 0) {
+            this.setState({
+                selectedRectangleId: null,
+                tag: undefined,
+                tagTime: undefined,
+                taggerName: undefined,
+                taggerId: undefined,
+            });
+        }
+    }
+
+    deleteRect = () => {
+        axios.delete(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag + `/${this.state.selectedRectangleId}`,
+            Constants.formHeader).then((res) => {
+            const {data} = res;
+            if (data.code === 200) {
+                const newRects = this.state.rectangles.filter(item => item['_id'] !== this.state.selectedRectangleId);
+                this.setState({
+                    rectangles: newRects,
+                    tag: undefined,
+                    tagTime: undefined,
+                    taggerName: undefined,
+                    taggerId: undefined,
+                }, () => {
+                    message.success("删除成功！");
+                });
+            } else {
+                message.error(data['error_msg']);
+            }
+        }).catch((err) => {
+            message.error(err.message);
+        });
+    }
+
+    renderStage = () => {
+        if (this.state.isCreatingRects) {
+            return (
+                <Stage
+                    width={this.state.imageWidth}
+                    height={this.state.imageHeight}
+                    onMouseDown={this.drawingHandleMouseDown}
+                    onMouseMove={this.drawingHandleMouseMove}
+                    onMouseUp={this.drawingHandleMouseUp}
+                >
+                    <Layer>
+                        <BackgroundImage imageUrl={this.props.backgroundImage} getImageSize={this.getImageSize}/>
+                        {this.state.rectangles.map((rectangle, index) => {
+                            const beginPositions = rectangle['begin_pos']['location'].split(',');
+                            const endPositions = rectangle['end_pos']['location'].split(',');
+                            return (
+                                <React.Fragment>
+                                    <Rect
+                                        key={index}
+                                        x={parseFloat(beginPositions[0])}
+                                        y={parseFloat(beginPositions[1])}
+                                        width={parseFloat(endPositions[0]) - parseFloat(beginPositions[0])}
+                                        height={parseFloat(endPositions[1]) - parseFloat(beginPositions[1])}
+                                        stroke='red'
+                                    />
+                                    <Text
+                                        text={rectangle['tag']['category']}
+                                        x={parseFloat(beginPositions[0])}
+                                        y={parseFloat(beginPositions[1]) - 25}
+                                        fill='red'
+                                        fontSize={25}
+                                    />
+                                </React.Fragment>
+                            );
+                        })}
+                        {(this.state.isDrawing || this.state.isNamingRect) && (
+                            <Rect
+                                x={this.state.startX}
+                                y={this.state.startY}
+                                width={this.state.endX - this.state.startX}
+                                height={this.state.endY - this.state.startY}
+                                stroke='blue'
+                            />
+                        )}
+                    </Layer>
+                </Stage>
+            );
+        }
+        else
+            {
+                return (
+                    <Stage
+                        width={this.state.imageWidth}
+                        height={this.state.imageHeight}
+                        onMouseDown={this.checkDeselect}
+                        onTouchStart={this.checkDeselect}
+                    >
+                        <Layer>
+                            <BackgroundImage imageUrl={this.props.backgroundImage} getImageSize={this.getImageSize}/>
+                            {this.state.rectangles.map((rectangle, index) => {
+                                const beginPositions = rectangle['begin_pos']['location'].split(',');
+                                const endPositions = rectangle['end_pos']['location'].split(',');
+                                return (
+                                    <Rectangle
+                                        key={index}
+                                        tag={rectangle['tag']['category']}
+                                        x={parseFloat(beginPositions[0])}
+                                        y={parseFloat(beginPositions[1])}
+                                        width={parseFloat(endPositions[0]) - parseFloat(beginPositions[0])}
+                                        height={parseFloat(endPositions[1]) - parseFloat(beginPositions[1])}
+                                        isSelected={rectangle['_id'] === this.state.selectedRectangleId}
+                                        onSelect={() => {
+                                            this.setState({
+                                                selectedRectangleId: rectangle['_id'],
+                                                tag: rectangle['tag']['category'],
+                                                tagTime: rectangle['tag_time'],
+                                                taggerName: rectangle['tagger_name'],
+                                                taggerId: rectangle['tagger_id']
+                                            });
+                                        }}
+                                        onDrag={(newAttrs) => {
+                                            // drag the rectangle
+                                            const rects = this.state.rectangles.slice();
+                                            const width = parseFloat(endPositions[0]) - parseFloat(beginPositions[0]);
+                                            const height = parseFloat(endPositions[1]) - parseFloat(beginPositions[1]);
+
+                                            // new begin pos and end pos
+                                            rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
+                                            rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
+
+                                            // setState to make it move
+                                            this.setState({rectangles: rects});
+                                        }}
+                                        onScale={(newAttrs) => {
+                                            const rects = this.state.rectangles.slice();
+                                            const width = newAttrs.width;
+                                            const height = newAttrs.height;
+
+                                            // new size
+                                            rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
+                                            rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
+
+                                            // setState to make it move
+                                            this.setState({rectangles: rects});
+                                        }}
+                                        confirmChange={() => {
+                                            const value = {
+                                                "sample_id": this.props.sid,
+                                                "begin_pos": {
+                                                    "location": this.state.rectangles[index]['begin_pos']['location'],
+                                                },
+                                                "end_pos": {
+                                                    "location": this.state.rectangles[index]['end_pos']['location'],
+                                                },
+                                                "tag": {
+                                                    "category": this.state.rectangles[index]['tag']['category'],
+                                                },
+                                            };
+
+                                            axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag + `/${this.state.selectedRectangleId}`,
+                                                JSON.stringify(value), Constants.formHeader).then((res) => {
+                                                const {data} = res;
+                                                if (data.code === 200) {
+                                                    message.success('修改成功');
+                                                    // renew tags
+                                                    this.getSampleTags();
+                                                } else {
+                                                    message.error(data['error_msg']);
+                                                }
+                                            }).catch((err) => {
+                                                message.error(err.message);
+                                            });
+                                        }}
+                                        cancelChange={() => {
+                                            this.getSampleTags();
+                                        }}
+                                    />
+                                );
+                            })}
+                        </Layer>
+                    </Stage>
+                );
+            }
+        }
+
+        render() {
+            return (
+                <Space direction={"vertical"} size={"middle"}>
+                    <Space direction={"horizontal"}>
+                        <Switch
+                            checkedChildren="新建"
+                            unCheckedChildren="编辑"
+                            defaultChecked
+                            onChange={this.switchMode}
+                        />
+                    </Space>
+                    <Space direction={"horizontal"}>
+                        {this.renderStage()}
+                        <Card
+                            title="标记信息"
+                            extra={this.state.selectedRectangleId === null ? <div/> :
+                                <Button danger
+                                        disabled={(this.props.relation === 'tagger') && (this.props.uid !== this.state.taggerId)}
+                                        onClick={this.deleteRect}>删除</Button>}
+                            style={{
+                                width: 300,
+                            }}
+                        >
+                            {this.state.tag === undefined ? <p>标签：{this.state.tag}</p> :
+                                <Select
+                                    onChange={this.updateTagName}
+                                    mode="tags"
+                                    style={{
+                                        width: '100%',
+                                    }}
+                                    placeholder="选择标签"
+                                    value={this.state.tag.split(';')}
+                                    options={this.props.labelOptions.map((item) => ({
+                                        label: item,
+                                        value: item,
+                                    }))}
+                                    dropdownRender={(menu) => (
+                                        <>
+                                            {menu}
+                                            <Divider
+                                                style={{
+                                                    margin: '8px 0',
+                                                }}
+                                            />
+                                            <Space
+                                                style={{
+                                                    padding: '0 8px 4px',
+                                                }}
+                                            >
+                                                <Input
+                                                    placeholder="输入标签"
+                                                    onChange={(e) => {
+                                                        this.setState({newLabelOption: e.target.value});
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="text"
+                                                    icon={<PlusOutlined/>}
+                                                    onClick={() => {
+                                                        this.props.setLabelOptions(this.state.newLabelOption);
+                                                    }}
+                                                >增加</Button>
+                                            </Space>
+                                        </>
+                                    )}
+                                />}
+                            <p>标记时间：{this.state.tagTime === undefined ? undefined : this.state.tagTime.slice(0, this.state.tagTime.length - 2)}</p>
+                            <p>标记者：{this.state.taggerName}</p>
+                        </Card>
+                    </Space>
+                    <Modal
+                        open={this.state.isNamingRect}
+                        title={"命名标签"}
+                        onCancel={this.cancelNamingRect}
+                        footer={null}
+                        destroyOnClose={true}
+                    >
+                        <Form
+                            layout={"vertical"}
+                            onFinish={this.confirmNamingRect}
+                        >
+                            <Form.Item
+                                label={"标签："}
+                                name="label"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message: '请输入标签！',
+                                    },
+                                ]}
+                            >
+                                <Select
+                                    mode="tags"
+                                    style={{
+                                        width: '100%',
+                                    }}
+                                    placeholder="选择标签"
+                                    options={this.props.labelOptions.map((item) => ({
+                                        label: item,
+                                        value: item,
+                                    }))}
+                                    dropdownRender={(menu) => (
+                                        <>
+                                            {menu}
+                                            <Divider
+                                                style={{
+                                                    margin: '8px 0',
+                                                }}
+                                            />
+                                            <Space
+                                                style={{
+                                                    padding: '0 8px 4px',
+                                                }}
+                                            >
+                                                <Input
+                                                    placeholder="输入标签"
+                                                    onChange={(e) => {
+                                                        this.setState({newLabelOption: e.target.value});
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="text"
+                                                    icon={<PlusOutlined/>}
+                                                    onClick={() => {
+                                                        this.props.setLabelOptions(this.state.newLabelOption);
+                                                    }}
+                                                >增加</Button>
+                                            </Space>
+                                        </>
+                                    )}
+                                />
+                            </Form.Item>
+                            <Form.Item>
+                                <Button type="primary" htmlType="submit">确定</Button>
+                            </Form.Item>
+                        </Form>
+                    </Modal>
+                </Space>
+            );
+        }
+        }
