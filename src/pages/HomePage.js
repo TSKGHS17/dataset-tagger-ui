@@ -1,7 +1,7 @@
 import React from 'react';
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {message, Skeleton, Typography} from "antd";
+import {Col, message, Row, Skeleton, Typography} from "antd";
 import Styles from "../utils/Styles";
 import {WithRouter} from "../router/WithRouter";
 
@@ -17,13 +17,11 @@ class HomePage extends React.Component {
         }
     }
 
-
     componentDidMount() {
         axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.info, Constants.formHeader).then((res) => {
             if (res.data.code === 200) {
                 this.setState({username: res.data.data['username'], isLoading: false});
-            }
-            else {
+            } else {
                 message.error(res.data['error_msg']);
                 this.props.navigate('/login');
             }
@@ -35,11 +33,11 @@ class HomePage extends React.Component {
 
     render() {
         return (
-            <>
+            <div className="parent-container-center">
                 <Skeleton active loading={this.state.isLoading}>
-                    <Title style={Styles.contentStyle}>{`欢迎，${this.state.username}`}</Title>
+                    <Title>{`欢迎，${this.state.username}`}</Title>
                 </Skeleton>
-            </>
+            </div>
         );
     }
 }

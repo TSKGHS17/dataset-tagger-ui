@@ -2,21 +2,26 @@ import React from "react";
 import {WithRouter} from "../router/WithRouter";
 import {
     Button,
+    Col,
+    Collapse,
+    Drawer,
+    Image,
     List,
     message,
     Modal,
+    Popconfirm,
     Progress,
+    Row,
     Skeleton,
     Space,
     Typography,
-    Upload,
-    Image,
-    Popconfirm, Drawer, Row, Col
+    Upload
 } from "antd";
 import axios from "axios";
 import Constants from "../utils/Constants";
 import {InboxOutlined} from "@ant-design/icons";
 import Canvas from "./Canvas";
+
 const {Text} = Typography;
 const {Dragger} = Upload;
 
@@ -58,7 +63,7 @@ class PictureList extends React.Component {
                 return isJPG || isPNG || Upload.LIST_IGNORE;
             },
             onChange: (info) => {
-                const { status, response } = info.file;
+                const {status, response} = info.file;
                 if (status === 'done') {
                     if (response.code !== 200) {
                         message.error(`${response['error_msg']}`);
@@ -73,8 +78,7 @@ class PictureList extends React.Component {
                             currentShowing: newCurrentShowing,
                             total: this.state.total + 1,
                         });
-                    }
-                    else {
+                    } else {
                         let newCurrentShowing = [];
                         newCurrentShowing.push(response.data);
                         this.setState({
@@ -225,8 +229,7 @@ class PictureList extends React.Component {
     getCanvasSrc = () => {
         if (this.state.currentLabeling !== undefined) {
             return Constants.frontEndAddr + this.state.currentLabeling['nginx_url'];
-        }
-        else {
+        } else {
             return undefined;
         }
     }
@@ -234,8 +237,7 @@ class PictureList extends React.Component {
     getCanvasSid = () => {
         if (this.state.currentLabeling !== undefined) {
             return this.state.currentLabeling['_id'];
-        }
-        else {
+        } else {
             return undefined;
         }
     }
@@ -243,8 +245,7 @@ class PictureList extends React.Component {
     setLabelOptions = (newLabelOption) => {
         if (newLabelOption === undefined) {
             message.error("标签不能为空！");
-        }
-        else {
+        } else {
             this.setState({labelOptions: [...this.state.labelOptions, newLabelOption]});
         }
     }
@@ -315,7 +316,8 @@ class PictureList extends React.Component {
                 <Row align={'middle'}>
                     <Col span={8}>
                         <Space direction='horizontal' size='middle'>
-                            <Button type="primary" onClick={this.startCreateSample} disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                            <Button type="primary" onClick={this.startCreateSample}
+                                    disabled={this.state.relation === 'tagger'}>创建样本</Button>
                             {/*<Button onClick={this.handleDownloadDataset}>数据集下载</Button>*/}
                             <Button onClick={this.backtoDataset}>返回</Button>
                         </Space>
@@ -341,33 +343,44 @@ class PictureList extends React.Component {
                         dataSource={this.state.currentShowing}
                         renderItem={(item, index) => (
                             <List.Item>
-                               <Space direction="horizontal" size="middle">
-                                   <Space direction="vertical">
-                                       <Space direction={"horizontal"} size={"middle"} align={"baseline"}>
-                                           <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
-                                               {' ' + item['nginx_url'].split('/').pop().split('||')[0]}</h2>
-                                           {/*{this.getListItemTag(item)} show the process tag */}
-                                       </Space>
-                                       <Space direction={"horizontal"} size={"middle"}>
-                                           <Button type={"primary"} onClick={() => this.startLabelSample(item)}>标记</Button>
-                                           <Popconfirm
-                                               title="删除样本"
-                                               description="确认删除该样本吗？"
-                                               onConfirm={() => {
-                                                   this.confirmDeleteSample(item)
-                                               }}
-                                               okText="确认"
-                                               cancelText="取消"
-                                               disabled={this.state.relation === 'tagger'}
-                                           >
-                                               <Button danger disabled={this.state.relation === 'tagger'}>删除</Button>
-                                           </Popconfirm>
-                                       </Space>
-                                   </Space>
-                                   <Image width={240}
-                                          height={160}
-                                          src={Constants.frontEndAddr + item['nginx_url']}/>
-                               </Space>
+                                <Space direction="horizontal" size="middle">
+                                    <Space direction="vertical">
+                                        <Space direction={"horizontal"} size={"middle"} align={"baseline"}>
+                                            <h2># {(this.state.currentPage - 1) * this.state.currentPagesize + index + 1}
+                                                {' ' + item['nginx_url'].split('/').pop().split('||')[0]}</h2>
+                                            {/*{this.getListItemTag(item)} show the process tag */}
+                                        </Space>
+                                        <Space direction={"horizontal"} size={"middle"}>
+                                            <Button type={"primary"}
+                                                    onClick={() => this.startLabelSample(item)}>标记</Button>
+                                            <Popconfirm
+                                                title="删除样本"
+                                                description="确认删除该样本吗？"
+                                                onConfirm={() => {
+                                                    this.confirmDeleteSample(item)
+                                                }}
+                                                okText="确认"
+                                                cancelText="取消"
+                                                disabled={this.state.relation === 'tagger'}
+                                            >
+                                                <Button danger disabled={this.state.relation === 'tagger'}>删除</Button>
+                                            </Popconfirm>
+                                        </Space>
+                                        <Collapse
+                                            bordered={false}
+                                        >
+                                            <Collapse.Panel
+                                                header={"图片，标记数：" + item['tag_num']}
+                                                key={1}
+                                            >
+                                                <Image
+                                                    src={Constants.frontEndAddr + item['nginx_url']}
+                                                    preview={false}
+                                                />,
+                                            </Collapse.Panel>
+                                        </Collapse>
+                                    </Space>
+                                </Space>
                             </List.Item>
                         )}
                     />
@@ -390,7 +403,7 @@ class PictureList extends React.Component {
                     </Dragger>
                 </Modal>
                 <Drawer
-                    width={1500}
+                    width={window.innerWidth}
                     placement="right"
                     open={this.state.isLabeling}
                     title={"标记样本"}

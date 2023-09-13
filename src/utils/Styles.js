@@ -19,10 +19,7 @@ const Styles = {
         position: 'relative',
     },
     contentStyle: {
-        position: 'relative',
-        left: (functions.getCenter()[0] - 230) + 'px',
-        top: (functions.getCenter()[1] - 228) + 'px',
-        width: "30%",
+        marginTop: '250px',
     },
     contentStyleWithSider: {
         margin: '0 16px',

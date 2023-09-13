@@ -1,6 +1,6 @@
 import React from 'react';
 import {LockOutlined, UserOutlined} from '@ant-design/icons';
-import {Layout, Button, Form, Input, Space, Modal, message, Spin} from 'antd';
+import {Layout, Button, Form, Input, Space, Modal, message, Spin, Row, Col} from 'antd';
 import axios from 'axios';
 import Constants from "../utils/Constants";
 import Styles from "../utils/Styles";
@@ -57,65 +57,69 @@ class LoginPage extends React.Component {
             <Layout style={Styles.layoutStyle}>
                 <Header style={Styles.headerStyle}>数据标注平台</Header>
                 <Content style={Styles.contentStyle}>
-                    <Spin spinning={this.state.isLogging}>
-                    <Form
-                        ref={this.formRef}
-                        onFinish={this.onFinish}
-                    >
-                        <Form.Item
-                            name="username"
-                            rules={[
-                                {
-                                    required: true,
-                                    message: '请输入用户名！',
-                                },
-                            ]}
-                        >
-                            <Input
-                                prefix={<UserOutlined/>}
-                                placeholder="用户名"
-                            />
-                        </Form.Item>
+                    <Row>
+                        <Col span={8} offset={8}>
+                            <Spin spinning={this.state.isLogging}>
+                                <Form
+                                    ref={this.formRef}
+                                    onFinish={this.onFinish}
+                                >
+                                    <Form.Item
+                                        name="username"
+                                        rules={[
+                                            {
+                                                required: true,
+                                                message: '请输入用户名！',
+                                            },
+                                        ]}
+                                    >
+                                        <Input
+                                            prefix={<UserOutlined/>}
+                                            placeholder="用户名"
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item
-                            name="password"
-                            rules={[
-                                {
-                                    required: true,
-                                    message: '请输入密码！',
-                                },
-                            ]}
-                        >
-                            <Input
-                                prefix={<LockOutlined/>}
-                                type="password"
-                                placeholder="密码"
-                            />
-                        </Form.Item>
+                                    <Form.Item
+                                        name="password"
+                                        rules={[
+                                            {
+                                                required: true,
+                                                message: '请输入密码！',
+                                            },
+                                        ]}
+                                    >
+                                        <Input
+                                            prefix={<LockOutlined/>}
+                                            type="password"
+                                            placeholder="密码"
+                                        />
+                                    </Form.Item>
 
-                        <Form.Item>
-                            <Space size={10}>
-                                <Button type="primary" htmlType="submit">
-                                    登录
-                                </Button>
-                                <Button onClick={this.handleRegister}>
-                                    注册
-                                </Button>
-                                <Button onClick={this.resetForm}>
-                                    重置
-                                </Button>
-                            </Space>
-                        </Form.Item>
-                    </Form>
-                    </Spin>
-                    <Modal
-                        open={this.state.showErrorMsg}
-                        title={"登录失败"}
-                        onCancel={this.closeErrorMsg}
-                        footer={<Button type="primary" onClick={this.closeErrorMsg}>好的</Button>}
-                    >
-                        {this.state.errorMsg}
-                    </Modal>
+                                    <Form.Item>
+                                        <Space size={10}>
+                                            <Button type="primary" htmlType="submit">
+                                                登录
+                                            </Button>
+                                            <Button onClick={this.handleRegister}>
+                                                注册
+                                            </Button>
+                                            <Button onClick={this.resetForm}>
+                                                重置
+                                            </Button>
+                                        </Space>
+                                    </Form.Item>
+                                </Form>
+                            </Spin>
+                            <Modal
+                                open={this.state.showErrorMsg}
+                                title={"登录失败"}
+                                onCancel={this.closeErrorMsg}
+                                footer={<Button type="primary" onClick={this.closeErrorMsg}>好的</Button>}
+                            >
+                                {this.state.errorMsg}
+                            </Modal>
+                        </Col>
+                    </Row>
                 </Content>
                 <Footer style={Styles.footerStyle}/>
             </Layout>

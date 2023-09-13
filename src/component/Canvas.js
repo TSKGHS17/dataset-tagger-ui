@@ -3,12 +3,13 @@ import {Layer, Stage, Image, Rect, Text} from "react-konva";
 import useImage from 'use-image';
 import axios from "axios";
 import Constants from "../utils/Constants";
-import {Button, Card, Divider, Form, Input, message, Modal, Select, Space, Switch} from "antd";
+import {Button, Card, Divider, Form, Input, message, Modal, Select, Space, Switch, Dropdown} from "antd";
 import Rectangle from "./Rectangle";
-import {PlusOutlined} from "@ant-design/icons";
+import {PlusOutlined, DownOutlined} from "@ant-design/icons";
+import {saveAs} from 'file-saver';
 
 const BackgroundImage = (values) => {
-    const [image] = useImage(values.imageUrl);
+    const [image] = useImage(values.imageUrl, 'Anonymous');
     if (image) {
         values.getImageSize(image.width, image.height);
     }
@@ -43,6 +44,28 @@ export default class Canvas extends React.Component {
 
             newLabelOption: undefined,
         }
+
+        this.stageRef = React.createRef();
+
+        const downLoadButtonItems = [
+            {
+                key: '1',
+                label: '下载图片',
+            },
+            {
+                key: '2',
+                label: '下载标签',
+            },
+            {
+                key: '3',
+                label: '下载标记后的图片',
+            },
+        ];
+
+        this.menuProps = {
+            items: downLoadButtonItems,
+            onClick: this.handleMenuClick,
+        };
     }
 
     componentDidMount() {
@@ -252,6 +275,52 @@ export default class Canvas extends React.Component {
         });
     }
 
+    handleMenuClick = (e) => {
+        const key = e.key;
+        switch (key) {
+            case '1':
+                this.downloadImage();
+                break;
+            case '2':
+                this.downloadTags();
+                break;
+            case '3':
+                this.downloadCanvas();
+                break;
+            default:
+                message.error('dropdown button error');
+        }
+    }
+
+    downloadImage = () => {
+        const imageUrl = this.props.backgroundImage;
+
+        fetch(imageUrl).then((response) => response.blob()).then((blob) => {
+            saveAs(blob, `${this.props.sid}.image.jpg`);
+        }).catch((error) => {
+            console.error('下载图片出错：', error);
+        });
+    }
+
+    downloadTags = () => {
+        const jsonData = JSON.stringify(this.state.rectangles);
+
+        const blob = new Blob([jsonData], {type: 'application/json'});
+
+        saveAs(blob, `${this.props.sid}.tags.json`);
+    }
+
+    downloadCanvas = () => {
+        const stage = this.stageRef.current;
+        stage.toDataURL({
+            mimeType: 'image/jpeg',
+            quality: 1,
+            callback: (dataUrl) => {
+                saveAs(dataUrl, 'downloaded-image.jpg');
+            },
+        });
+    }
+
     renderStage = () => {
         if (this.state.isCreatingRects) {
             return (
@@ -261,6 +330,7 @@ export default class Canvas extends React.Component {
                     onMouseDown={this.drawingHandleMouseDown}
                     onMouseMove={this.drawingHandleMouseMove}
                     onMouseUp={this.drawingHandleMouseUp}
+                    ref={this.stageRef}
                 >
                     <Layer>
                         <BackgroundImage imageUrl={this.props.backgroundImage} getImageSize={this.getImageSize}/>
@@ -299,242 +369,248 @@ export default class Canvas extends React.Component {
                     </Layer>
                 </Stage>
             );
-        }
-        else
-            {
-                return (
-                    <Stage
-                        width={this.state.imageWidth}
-                        height={this.state.imageHeight}
-                        onMouseDown={this.checkDeselect}
-                        onTouchStart={this.checkDeselect}
-                    >
-                        <Layer>
-                            <BackgroundImage imageUrl={this.props.backgroundImage} getImageSize={this.getImageSize}/>
-                            {this.state.rectangles.map((rectangle, index) => {
-                                const beginPositions = rectangle['begin_pos']['location'].split(',');
-                                const endPositions = rectangle['end_pos']['location'].split(',');
-                                return (
-                                    <Rectangle
-                                        key={index}
-                                        tag={rectangle['tag']['category']}
-                                        x={parseFloat(beginPositions[0])}
-                                        y={parseFloat(beginPositions[1])}
-                                        width={parseFloat(endPositions[0]) - parseFloat(beginPositions[0])}
-                                        height={parseFloat(endPositions[1]) - parseFloat(beginPositions[1])}
-                                        isSelected={rectangle['_id'] === this.state.selectedRectangleId}
-                                        onSelect={() => {
-                                            this.setState({
-                                                selectedRectangleId: rectangle['_id'],
-                                                tag: rectangle['tag']['category'],
-                                                tagTime: rectangle['tag_time'],
-                                                taggerName: rectangle['tagger_name'],
-                                                taggerId: rectangle['tagger_id']
-                                            });
-                                        }}
-                                        onDrag={(newAttrs) => {
-                                            // drag the rectangle
-                                            const rects = this.state.rectangles.slice();
-                                            const width = parseFloat(endPositions[0]) - parseFloat(beginPositions[0]);
-                                            const height = parseFloat(endPositions[1]) - parseFloat(beginPositions[1]);
-
-                                            // new begin pos and end pos
-                                            rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
-                                            rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
-
-                                            // setState to make it move
-                                            this.setState({rectangles: rects});
-                                        }}
-                                        onScale={(newAttrs) => {
-                                            const rects = this.state.rectangles.slice();
-                                            const width = newAttrs.width;
-                                            const height = newAttrs.height;
-
-                                            // new size
-                                            rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
-                                            rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
-
-                                            // setState to make it move
-                                            this.setState({rectangles: rects});
-                                        }}
-                                        confirmChange={() => {
-                                            const value = {
-                                                "sample_id": this.props.sid,
-                                                "begin_pos": {
-                                                    "location": this.state.rectangles[index]['begin_pos']['location'],
-                                                },
-                                                "end_pos": {
-                                                    "location": this.state.rectangles[index]['end_pos']['location'],
-                                                },
-                                                "tag": {
-                                                    "category": this.state.rectangles[index]['tag']['category'],
-                                                },
-                                            };
-
-                                            axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag + `/${this.state.selectedRectangleId}`,
-                                                JSON.stringify(value), Constants.formHeader).then((res) => {
-                                                const {data} = res;
-                                                if (data.code === 200) {
-                                                    message.success('修改成功');
-                                                    // renew tags
-                                                    this.getSampleTags();
-                                                } else {
-                                                    message.error(data['error_msg']);
-                                                }
-                                            }).catch((err) => {
-                                                message.error(err.message);
-                                            });
-                                        }}
-                                        cancelChange={() => {
-                                            this.getSampleTags();
-                                        }}
-                                    />
-                                );
-                            })}
-                        </Layer>
-                    </Stage>
-                );
-            }
-        }
-
-        render() {
+        } else {
             return (
-                <Space direction={"vertical"} size={"middle"}>
-                    <Space direction={"horizontal"}>
-                        <Switch
-                            checkedChildren="新建"
-                            unCheckedChildren="编辑"
-                            defaultChecked
-                            onChange={this.switchMode}
-                        />
-                    </Space>
-                    <Space direction={"horizontal"}>
-                        {this.renderStage()}
-                        <Card
-                            title="标记信息"
-                            extra={this.state.selectedRectangleId === null ? <div/> :
-                                <Button danger
-                                        disabled={(this.props.relation === 'tagger') && (this.props.uid !== this.state.taggerId)}
-                                        onClick={this.deleteRect}>删除</Button>}
-                            style={{
-                                width: 300,
-                            }}
-                        >
-                            {this.state.tag === undefined ? <p>标签：{this.state.tag}</p> :
-                                <Select
-                                    onChange={this.updateTagName}
-                                    mode="tags"
-                                    style={{
-                                        width: '100%',
+                <Stage
+                    width={this.state.imageWidth}
+                    height={this.state.imageHeight}
+                    onMouseDown={this.checkDeselect}
+                    onTouchStart={this.checkDeselect}
+                >
+                    <Layer>
+                        <BackgroundImage imageUrl={this.props.backgroundImage} getImageSize={this.getImageSize}/>
+                        {this.state.rectangles.map((rectangle, index) => {
+                            const beginPositions = rectangle['begin_pos']['location'].split(',');
+                            const endPositions = rectangle['end_pos']['location'].split(',');
+                            return (
+                                <Rectangle
+                                    key={index}
+                                    tag={rectangle['tag']['category']}
+                                    x={parseFloat(beginPositions[0])}
+                                    y={parseFloat(beginPositions[1])}
+                                    width={parseFloat(endPositions[0]) - parseFloat(beginPositions[0])}
+                                    height={parseFloat(endPositions[1]) - parseFloat(beginPositions[1])}
+                                    isSelected={rectangle['_id'] === this.state.selectedRectangleId}
+                                    onSelect={() => {
+                                        this.setState({
+                                            selectedRectangleId: rectangle['_id'],
+                                            tag: rectangle['tag']['category'],
+                                            tagTime: rectangle['tag_time'],
+                                            taggerName: rectangle['tagger_name'],
+                                            taggerId: rectangle['tagger_id']
+                                        });
                                     }}
-                                    placeholder="选择标签"
-                                    value={this.state.tag.split(';')}
-                                    options={this.props.labelOptions.map((item) => ({
-                                        label: item,
-                                        value: item,
-                                    }))}
-                                    dropdownRender={(menu) => (
-                                        <>
-                                            {menu}
-                                            <Divider
-                                                style={{
-                                                    margin: '8px 0',
-                                                }}
-                                            />
-                                            <Space
-                                                style={{
-                                                    padding: '0 8px 4px',
-                                                }}
-                                            >
-                                                <Input
-                                                    placeholder="输入标签"
-                                                    onChange={(e) => {
-                                                        this.setState({newLabelOption: e.target.value});
-                                                    }}
-                                                />
-                                                <Button
-                                                    type="text"
-                                                    icon={<PlusOutlined/>}
-                                                    onClick={() => {
-                                                        this.props.setLabelOptions(this.state.newLabelOption);
-                                                    }}
-                                                >增加</Button>
-                                            </Space>
-                                        </>
-                                    )}
-                                />}
-                            <p>标记时间：{this.state.tagTime === undefined ? undefined : this.state.tagTime.slice(0, this.state.tagTime.length - 2)}</p>
-                            <p>标记者：{this.state.taggerName}</p>
-                        </Card>
-                    </Space>
-                    <Modal
-                        open={this.state.isNamingRect}
-                        title={"命名标签"}
-                        onCancel={this.cancelNamingRect}
-                        footer={null}
-                        destroyOnClose={true}
-                    >
-                        <Form
-                            layout={"vertical"}
-                            onFinish={this.confirmNamingRect}
-                        >
-                            <Form.Item
-                                label={"标签："}
-                                name="label"
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: '请输入标签！',
-                                    },
-                                ]}
-                            >
-                                <Select
-                                    mode="tags"
-                                    style={{
-                                        width: '100%',
+                                    onDrag={(newAttrs) => {
+                                        // drag the rectangle
+                                        const rects = this.state.rectangles.slice();
+                                        const width = parseFloat(endPositions[0]) - parseFloat(beginPositions[0]);
+                                        const height = parseFloat(endPositions[1]) - parseFloat(beginPositions[1]);
+
+                                        // new begin pos and end pos
+                                        rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
+                                        rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
+
+                                        // setState to make it move
+                                        this.setState({rectangles: rects});
                                     }}
-                                    placeholder="选择标签"
-                                    options={this.props.labelOptions.map((item) => ({
-                                        label: item,
-                                        value: item,
-                                    }))}
-                                    dropdownRender={(menu) => (
-                                        <>
-                                            {menu}
-                                            <Divider
-                                                style={{
-                                                    margin: '8px 0',
-                                                }}
-                                            />
-                                            <Space
-                                                style={{
-                                                    padding: '0 8px 4px',
-                                                }}
-                                            >
-                                                <Input
-                                                    placeholder="输入标签"
-                                                    onChange={(e) => {
-                                                        this.setState({newLabelOption: e.target.value});
-                                                    }}
-                                                />
-                                                <Button
-                                                    type="text"
-                                                    icon={<PlusOutlined/>}
-                                                    onClick={() => {
-                                                        this.props.setLabelOptions(this.state.newLabelOption);
-                                                    }}
-                                                >增加</Button>
-                                            </Space>
-                                        </>
-                                    )}
+                                    onScale={(newAttrs) => {
+                                        const rects = this.state.rectangles.slice();
+                                        const width = newAttrs.width;
+                                        const height = newAttrs.height;
+
+                                        // new size
+                                        rects[index]['begin_pos']['location'] = `${newAttrs.x},${newAttrs.y}`;
+                                        rects[index]['end_pos']['location'] = `${newAttrs.x + width},${newAttrs.y + height}`;
+
+                                        // setState to make it move
+                                        this.setState({rectangles: rects});
+                                    }}
+                                    confirmChange={() => {
+                                        const value = {
+                                            "sample_id": this.props.sid,
+                                            "begin_pos": {
+                                                "location": this.state.rectangles[index]['begin_pos']['location'],
+                                            },
+                                            "end_pos": {
+                                                "location": this.state.rectangles[index]['end_pos']['location'],
+                                            },
+                                            "tag": {
+                                                "category": this.state.rectangles[index]['tag']['category'],
+                                            },
+                                        };
+
+                                        axios.post(Constants.frontEndBaseUrl + Constants.proxy + Constants.tag + `/${this.state.selectedRectangleId}`,
+                                            JSON.stringify(value), Constants.formHeader).then((res) => {
+                                            const {data} = res;
+                                            if (data.code === 200) {
+                                                message.success('修改成功');
+                                                // renew tags
+                                                this.getSampleTags();
+                                            } else {
+                                                message.error(data['error_msg']);
+                                            }
+                                        }).catch((err) => {
+                                            message.error(err.message);
+                                        });
+                                    }}
+                                    cancelChange={() => {
+                                        this.getSampleTags();
+                                    }}
                                 />
-                            </Form.Item>
-                            <Form.Item>
-                                <Button type="primary" htmlType="submit">确定</Button>
-                            </Form.Item>
-                        </Form>
-                    </Modal>
-                </Space>
+                            );
+                        })}
+                    </Layer>
+                </Stage>
             );
         }
-        }
+    }
+
+    render() {
+        return (
+            <Space direction={"vertical"} size={"middle"}>
+                <Space direction={"horizontal"}>
+                    <Switch
+                        checkedChildren="新建"
+                        unCheckedChildren="编辑"
+                        defaultChecked
+                        onChange={this.switchMode}
+                    />
+                    <Dropdown menu={this.menuProps}>
+                        <Button>
+                            <Space>
+                                下载
+                                <DownOutlined/>
+                            </Space>
+                        </Button>
+                    </Dropdown>
+                </Space>
+                <Space direction={"horizontal"}>
+                    {this.renderStage()}
+                    <Card
+                        title="标记信息"
+                        extra={this.state.selectedRectangleId === null ? <div/> :
+                            <Button danger
+                                    disabled={(this.props.relation === 'tagger') && (this.props.uid !== this.state.taggerId)}
+                                    onClick={this.deleteRect}>删除</Button>}
+                        style={{
+                            width: 300,
+                        }}
+                    >
+                        {this.state.tag === undefined ? <p>标签：{this.state.tag}</p> :
+                            <Select
+                                onChange={this.updateTagName}
+                                mode="tags"
+                                style={{
+                                    width: '100%',
+                                }}
+                                placeholder="选择标签"
+                                value={this.state.tag.split(';')}
+                                options={this.props.labelOptions.map((item) => ({
+                                    label: item,
+                                    value: item,
+                                }))}
+                                dropdownRender={(menu) => (
+                                    <>
+                                        {menu}
+                                        <Divider
+                                            style={{
+                                                margin: '8px 0',
+                                            }}
+                                        />
+                                        <Space
+                                            style={{
+                                                padding: '0 8px 4px',
+                                            }}
+                                        >
+                                            <Input
+                                                placeholder="输入标签"
+                                                onChange={(e) => {
+                                                    this.setState({newLabelOption: e.target.value});
+                                                }}
+                                            />
+                                            <Button
+                                                type="text"
+                                                icon={<PlusOutlined/>}
+                                                onClick={() => {
+                                                    this.props.setLabelOptions(this.state.newLabelOption);
+                                                }}
+                                            >增加</Button>
+                                        </Space>
+                                    </>
+                                )}
+                            />}
+                        <p>标记时间：{this.state.tagTime === undefined ? undefined : this.state.tagTime.slice(0, this.state.tagTime.length - 2)}</p>
+                        <p>标记者：{this.state.taggerName}</p>
+                    </Card>
+                </Space>
+                <Modal
+                    open={this.state.isNamingRect}
+                    title={"命名标签"}
+                    onCancel={this.cancelNamingRect}
+                    footer={null}
+                    destroyOnClose={true}
+                >
+                    <Form
+                        layout={"vertical"}
+                        onFinish={this.confirmNamingRect}
+                    >
+                        <Form.Item
+                            label={"标签："}
+                            name="label"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: '请输入标签！',
+                                },
+                            ]}
+                        >
+                            <Select
+                                mode="tags"
+                                style={{
+                                    width: '100%',
+                                }}
+                                placeholder="选择标签"
+                                options={this.props.labelOptions.map((item) => ({
+                                    label: item,
+                                    value: item,
+                                }))}
+                                dropdownRender={(menu) => (
+                                    <>
+                                        {menu}
+                                        <Divider
+                                            style={{
+                                                margin: '8px 0',
+                                            }}
+                                        />
+                                        <Space
+                                            style={{
+                                                padding: '0 8px 4px',
+                                            }}
+                                        >
+                                            <Input
+                                                placeholder="输入标签"
+                                                onChange={(e) => {
+                                                    this.setState({newLabelOption: e.target.value});
+                                                }}
+                                            />
+                                            <Button
+                                                type="text"
+                                                icon={<PlusOutlined/>}
+                                                onClick={() => {
+                                                    this.props.setLabelOptions(this.state.newLabelOption);
+                                                }}
+                                            >增加</Button>
+                                        </Space>
+                                    </>
+                                )}
+                            />
+                        </Form.Item>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit">确定</Button>
+                        </Form.Item>
+                    </Form>
+                </Modal>
+            </Space>
+        );
+    }
+}
