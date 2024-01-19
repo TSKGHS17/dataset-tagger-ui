@@ -44,6 +44,9 @@ const router = createBrowserRouter([{
     path: '/login',
     element: <LoginPage/>,
 }, {
+    path: '/dataTagger',
+    element: <LoginPage/>,
+}, {
     path: '/register',
     element: <RegisterPage/>,
 }, {

@@ -53,7 +53,7 @@ class PictureList extends React.Component {
             name: 'file',
             multiple: true,
             method: 'post',
-            action: Constants.frontEndBaseUrl + `/b/api/sample/upload/${this.state.did}`,
+            action: Constants.frontEndBaseUrl + `/api/sample/upload/${this.state.did}`,
             beforeUpload: (file) => {
                 const isJPG = file.type === "image/jpeg";
                 const isPNG = file.type === "image/png";
@@ -106,7 +106,7 @@ class PictureList extends React.Component {
 
     componentDidMount() {
         let frontEndDatasetUrl =
-            `/b/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+            `/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -126,7 +126,7 @@ class PictureList extends React.Component {
     }
 
     getPercentage = () => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + `/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
             let {data} = res;
             this.setState({percent: data['data']});
         }).catch((err) => {
@@ -140,7 +140,7 @@ class PictureList extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+        let frontEndDatasetUrl = `/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -163,12 +163,12 @@ class PictureList extends React.Component {
 
     confirmDeleteSample = (item) => {
         const sid = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/sample/${sid}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + `/api/sample/${sid}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage - 1}
+                        `/api/samples?page_num=${this.state.currentPage - 1}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -189,7 +189,7 @@ class PictureList extends React.Component {
                     });
                 } else {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage}
+                        `/api/samples?page_num=${this.state.currentPage}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -250,66 +250,6 @@ class PictureList extends React.Component {
         }
     }
 
-    handleDownloadDataset = async () => {
-        //TODO 数据集下载
-
-        // const zip = new JSZip();
-        // const samplesRequests = [];
-        // const pageNum = Math.floor(this.state.total / this.state.currentPagesize) + 1;
-        //
-        // for (let i = 1; i <= pageNum; ++i) {
-        //     const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.samples +
-        //         `?page_num=${i}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`,
-        //         Constants.formHeader);
-        //     samplesRequests.push(request);
-        // }
-        //
-        // try {
-        //     const samplesResponses = await Promise.allSettled(samplesRequests);
-        //     const tagsRequests = [];
-        //
-        //     samplesResponses.forEach((response) => {
-        //         if (response.status === 'fulfilled') {
-        //             const data = response.value.data;
-        //             if (data.code === 200) {
-        //                 const samples = data.data['samples'];
-        //                 for (let j = 0; j < samples.length; ++j) {
-        //                     const textsBlob = new Blob([samples[j]['content']], {type: 'text/plain;charset=utf-8'});
-        //                     const sampleIndex = (data.data['curPage'] - 1) * this.state.currentPagesize + j + 1;
-        //                     zip.file(`${sampleIndex}.text.txt`, textsBlob, {binary: true});
-        //
-        //                     const request = axios.get(Constants.frontEndBaseUrl + Constants.proxy + Constants.sample_join_tags +
-        //                         `/${samples[j]['_id']}`, Constants.formHeader);
-        //                     tagsRequests.push(request);
-        //                 }
-        //             } else {
-        //                 message.error(data['error_msg']);
-        //             }
-        //         } else {
-        //             message.error(response.reason.message);
-        //         }
-        //     });
-        //
-        //     try {
-        //         const tagsResponses = await Promise.allSettled(tagsRequests);
-        //
-        //         tagsResponses.forEach((response, index) => {
-        //             const tags = response.value.data.data['tags'];
-        //             const jsonData = JSON.stringify(tags);
-        //             const blob = new Blob([jsonData], {type: 'application/json'});
-        //             zip.file(`${index + 1}.labels.json`, blob, {binary: true});
-        //         })
-        //
-        //         const content = await zip.generateAsync({type: 'blob'});
-        //         saveAs(content, `${this.state.did}.zip`);
-        //     } catch (err) {
-        //         message.error(err);
-        //     }
-        // } catch (err) {
-        //     message.error(err);
-        // }
-    }
-
     render() {
         return (
             <Space direction="vertical" size="middle" style={{display: 'flex'}}>
@@ -317,7 +257,7 @@ class PictureList extends React.Component {
                     <Col span={8}>
                         <Space direction='horizontal' size='middle'>
                             <Button type="primary" onClick={this.startCreateSample}
-                                    disabled={this.state.relation === 'tagger'}>创建样本</Button>
+                                    disabledF={this.state.relation === 'tagger'}>创建样本</Button>
                             {/*<Button onClick={this.handleDownloadDataset}>数据集下载</Button>*/}
                             <Button onClick={this.backtoDataset}>返回</Button>
                         </Space>

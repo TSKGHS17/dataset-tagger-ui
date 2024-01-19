@@ -53,7 +53,7 @@ class AudioList extends React.Component {
             name: 'file',
             multiple: true,
             method: 'post',
-            action: Constants.frontEndBaseUrl + `/b/api/sample/upload/${this.state.did}`,
+            action: Constants.frontEndBaseUrl + `/api/sample/upload/${this.state.did}`,
             beforeUpload: (file) => {
                 const isMP3 = file.type === "audio/mpeg";
                 if (!isMP3) {
@@ -98,7 +98,7 @@ class AudioList extends React.Component {
 
     componentDidMount() {
         let frontEndDatasetUrl =
-            `/b/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+            `/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -107,7 +107,7 @@ class AudioList extends React.Component {
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
                     let frontEndTagsUrl =
-                        `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+                        `/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
@@ -137,7 +137,7 @@ class AudioList extends React.Component {
     }
 
     getPercentage = () => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + `/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
             let {data} = res;
             this.setState({percent: data['data']});
         }).catch((err) => {
@@ -159,7 +159,7 @@ class AudioList extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+        let frontEndDatasetUrl = `/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -167,7 +167,7 @@ class AudioList extends React.Component {
                     total: data.data['total'],
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
-                    let frontEndTagsUrl = `/b/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+                    let frontEndTagsUrl = `/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
@@ -199,12 +199,12 @@ class AudioList extends React.Component {
 
     confirmDeleteSample = (item) => {
         const sid = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/sample/${sid}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + `/api/sample/${sid}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage - 1}
+                        `/api/samples?page_num=${this.state.currentPage - 1}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -215,7 +215,7 @@ class AudioList extends React.Component {
                                 currentPage: this.state.currentPage - 1,
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                                 axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
@@ -244,7 +244,7 @@ class AudioList extends React.Component {
                     });
                 } else {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage}
+                        `/api/samples?page_num=${this.state.currentPage}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -254,7 +254,7 @@ class AudioList extends React.Component {
                                 tmpCurrentShowing: data.data['samples'],
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                                 axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
@@ -313,7 +313,7 @@ class AudioList extends React.Component {
                 "category": values['label'],
             },
         }
-        axios.post(Constants.frontEndBaseUrl + '/b/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
+        axios.post(Constants.frontEndBaseUrl + '/api/tag', JSON.stringify(formattedValues), Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 let newCurrentShowingLabels = this.state.currentShowingLabels;
@@ -331,7 +331,7 @@ class AudioList extends React.Component {
     }
 
     startShowingLabels = (item) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + `/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.setState({isShowingLabels: true, currentSampleLabels: data.data['tags']});
@@ -348,10 +348,10 @@ class AudioList extends React.Component {
     }
 
     confirmDeleteLabel = (item) => {
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + `/api/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
-                axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['sample_id']}`, Constants.formHeader).then((res) => {
+                axios.get(Constants.frontEndBaseUrl + `/api/sample/tag/${item['sample_id']}`, Constants.formHeader).then((res) => {
                     const {data} = res;
                     if (data.code === 200) {
                         this.setState({currentSampleLabels: data.data['tags']});
@@ -374,7 +374,7 @@ class AudioList extends React.Component {
     }
 
     handleDownload = (item, index) => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + `/api/sample/tag/${item['_id']}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 const jsonData = JSON.stringify(data.data['tags']);

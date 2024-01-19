@@ -59,7 +59,7 @@ class TextList extends React.Component {
 
     componentDidMount() {
         let frontEndDatasetUrl =
-            `/b/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+            `/api/samples?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -68,7 +68,7 @@ class TextList extends React.Component {
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
                     let frontEndTagsUrl =
-                        `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+                        `/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
@@ -98,7 +98,7 @@ class TextList extends React.Component {
     }
 
     getPercentage = () => {
-        axios.get(Constants.frontEndBaseUrl + `/b/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
+        axios.get(Constants.frontEndBaseUrl + `/api/dataset/process/${this.state.did}`, Constants.formHeader).then((res) => {
             let {data} = res;
             this.setState({percent: data['data']});
         }).catch((err) => {
@@ -124,7 +124,7 @@ class TextList extends React.Component {
             dataset_id: this.state.did,
             content: this.textAreaRef.current.resizableTextArea['textArea']['value'],
         };
-        axios.post(Constants.frontEndBaseUrl + '/b/api/sample', JSON.stringify(value), Constants.formHeader).then(res => {
+        axios.post(Constants.frontEndBaseUrl + '/api/sample', JSON.stringify(value), Constants.formHeader).then(res => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length < this.state.currentPagesize) {
@@ -155,7 +155,7 @@ class TextList extends React.Component {
     }
 
     onPaginationChange = (page, pageSize) => {
-        let frontEndDatasetUrl = `/b/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+        let frontEndDatasetUrl = `/api/samples?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {
@@ -163,7 +163,7 @@ class TextList extends React.Component {
                     total: data.data['total'],
                     tmpCurrentShowing: data.data['samples'],
                 }, () => {
-                    let frontEndTagsUrl = `/b/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
+                    let frontEndTagsUrl = `/api/tags?page_num=${page}&page_size=${pageSize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
                         if (data.code === 200) {
@@ -385,7 +385,7 @@ class TextList extends React.Component {
 
     confirmDeleteLabel = (label) => {
         const tid = label['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/tag/${tid}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + `/api/tag/${tid}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 this.renewLabels();
@@ -403,12 +403,12 @@ class TextList extends React.Component {
 
     confirmDeleteSample = (item) => {
         const sid = item['_id'];
-        axios.delete(Constants.frontEndBaseUrl + `/b/api/sample/${sid}`, Constants.formHeader).then((res) => {
+        axios.delete(Constants.frontEndBaseUrl + `/api/sample/${sid}`, Constants.formHeader).then((res) => {
             const {data} = res;
             if (data.code === 200) {
                 if (this.state.currentShowing.length === 1 && this.state.currentPage !== 1) {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage - 1}
+                        `/api/samples?page_num=${this.state.currentPage - 1}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -419,7 +419,7 @@ class TextList extends React.Component {
                                 currentPage: this.state.currentPage - 1,
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                                 axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
@@ -448,7 +448,7 @@ class TextList extends React.Component {
                     });
                 } else {
                     let frontEndDatasetUrl =
-                        `/b/api/samples?page_num=${this.state.currentPage}
+                        `/api/samples?page_num=${this.state.currentPage}
                         &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                     axios.get(Constants.frontEndBaseUrl + frontEndDatasetUrl, Constants.formHeader).then((res) => {
                         let {data} = res;
@@ -458,7 +458,7 @@ class TextList extends React.Component {
                                 tmpCurrentShowing: data.data['samples'],
                             }, () => {
                                 let frontEndTagsUrl =
-                                    `/b/api/tags?page_num=${this.state.currentPage}
+                                    `/api/tags?page_num=${this.state.currentPage}
                                     &page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
                                 axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
                                     let {data} = res;
@@ -499,7 +499,7 @@ class TextList extends React.Component {
     // utility
     renewLabels = () => {
         let frontEndTagsUrl =
-            `/b/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
+            `/api/tags?page_num=${this.state.currentPage}&page_size=${this.state.currentPagesize}&dataset_id=${this.state.did}`;
         axios.get(Constants.frontEndBaseUrl + frontEndTagsUrl, Constants.formHeader).then((res) => {
             let {data} = res;
             if (data.code === 200) {

@@ -1,8 +1,8 @@
 const Constants = {
-    frontEndBaseUrl: 'http://localhost:3000',
+    frontEndBaseUrl: 'http://10.177.44.113',
     frontEndAddr: 'http://10.177.44.113',
     formHeader: {headers: {'Content-Type': 'application/json'}},
-    proxy: '/b',
+    proxy: '',
     login: '/api/user/login',
     logout: '/api/user/logout',
     register: '/api/user/register',
